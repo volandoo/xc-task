@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "turnpoints": [
+    {
+      "waypoint": {
+        "altSmoothed": -2147483648,
+        "lat": 42.105114664009633,
+        "name": "Waypoint",
+        "lon": 1.844335157006725
+      },
+      "radius": 50
+    },
+    {
+      "waypoint": {
+        "altSmoothed": 1453,
+        "lat": 42.121450000000003,
+        "name": "E28",
+        "description": "FIGUERASSA",
+        "lon": 1.8239829999999984
+      },
+      "radius": 400
+    },
+    {
+      "waypoint": {
+        "altSmoothed": 1391,
+        "lat": 42.093021,
+        "name": "E04",
+        "description": "BUSA ANT",
+        "lon": 1.6242670000000032
+      },
+      "radius": 1500
+    },
+    {
+      "waypoint": {
+        "altSmoothed": 913,
+        "lat": 42.136383000000002,
+        "name": "E03",
+        "description": "ST- LLORENC",
+        "lon": 1.591306000000003
+      },
+      "radius": 400
+    },
+    {
+      "waypoint": {
+        "altSmoothed": 1790,
+        "lat": 42.170499999999997,
+        "name": "E32",
+        "description": "REF- BAGES",
+        "lon": 1.5643000000000029
+      },
+      "radius": 400
+    },
+    {
+      "waypoint": {
+        "altSmoothed": 1293,
+        "lat": 42.110464,
+        "name": "E02",
+        "description": "PI 3 BRANQUES",
+        "lon": 1.781911000000008
+      },
+      "radius": 400
+    },
+    {
+      "waypoint": {
+        "altSmoothed": 2013,
+        "lat": 42.13785,
+        "name": "E80",
+        "description": "RASOS PEGUERA",
+        "lon": 1.7727329999999881
+      },
+      "radius": 400
+    },
+    {
+      "waypoint": {
+        "altSmoothed": 610,
+        "lat": 42.014285000000001,
+        "name": "E81",
+        "description": "LA PASTORA",
+        "lon": 1.8431740000000048
+      },
+      "radius": 400
+    }
+  ],
+  "taskType": "CLASSIC"
+}

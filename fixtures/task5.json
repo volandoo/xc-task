@@ -1,0 +1,51 @@
+{
+  "earthModel": "WGS84",
+  "goal": { "deadline": "16:00:00Z", "type": "LINE" },
+  "sss": { "direction": "EXIT", "timeGates": ["06:00:00Z"], "type": "RACE" },
+  "taskType": "CLASSIC",
+  "turnpoints": [
+    {
+      "radius": 50,
+      "type": "SSS",
+      "waypoint": {
+        "altSmoothed": 782,
+        "description": "G.HIGUERUELAS.0781",
+        "lat": 39.79265594482422,
+        "lon": -0.8646057844161987,
+        "name": "G.HIGUERUELAS.0781"
+      }
+    },
+    {
+      "radius": 50,
+      "waypoint": {
+        "altSmoothed": 1082,
+        "description": "P.SENDAHIGUERUELAS.1093",
+        "lat": 39.808860778808594,
+        "lon": -0.8641818761825562,
+        "name": "P.SENDAHIGUERUELAS.1093"
+      }
+    },
+    {
+      "radius": 50,
+      "waypoint": {
+        "altSmoothed": 1133,
+        "description": "D.HIGUERUELAS.1132",
+        "lat": 39.80592346191406,
+        "lon": -0.8741528987884521,
+        "name": "D.HIGUERUELAS.1132"
+      }
+    },
+    {
+      "radius": 50,
+      "type": "ESS",
+      "waypoint": {
+        "altSmoothed": 782,
+        "description": "G.HIGUERUELAS.0781",
+        "lat": 39.79265594482422,
+        "lon": -0.8646057844161987,
+        "name": "G.HIGUERUELAS.0781"
+      }
+    }
+  ],
+  "version": 1
+}

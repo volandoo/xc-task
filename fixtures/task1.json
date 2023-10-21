@@ -1,0 +1,68 @@
+{
+    "version": 1,
+    "taskType": "CLASSIC",
+    "turnpoints":
+    [
+        {
+            "radius": 3000,
+            "waypoint":
+            {
+                "lon": -3.7791069,
+                "lat": 37.6324929,
+                "altSmoothed": 1780,
+                "name": "D05180",
+                "description": "PANDERA"
+            },
+            "type": "TAKEOFF"
+        },
+        {
+            "radius": 17000,
+            "waypoint":
+            {
+                "lon": -3.4637032,
+                "lat": 38.0018347,
+                "altSmoothed": 774,
+                "name": "A11077",
+                "description": "BAEZA"
+            }
+        },
+        {
+            "radius": 3000,
+            "waypoint":
+            {
+                "lon": -2.7843133,
+                "lat": 38.3591349,
+                "altSmoothed": 552,
+                "name": "A29055",
+                "description": "HOSPITAL"
+            },
+            "type": "ESS"
+        },
+        {
+            "radius": 400,
+            "waypoint":
+            {
+                "lon": -2.7843133,
+                "lat": 38.3591349,
+                "altSmoothed": 552,
+                "name": "A29055",
+                "description": "HOSPITAL"
+            }
+        }
+    ],
+    "sss":
+    {
+        "type": "RACE",
+        "direction": "EXIT",
+        "timeGates":
+        [
+            "09:00:00Z"
+        ]
+    },
+    "goal":
+    {
+        "type": "CYLINDER",
+        "deadline": "17:00:00Z"
+    },
+    "earthModel": "WGS84"
+}

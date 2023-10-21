@@ -1,0 +1,21 @@
+{
+  "name": "task-geojson",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/src/app.js",
+  "scripts": {
+    "start": "tsc && node dist/src/app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/proj4": "^2.5.4",
+    "install": "^0.13.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@turf/turf": "^6.5.0",
+    "geographiclib-geodesic": "^2.0.0",
+    "proj4": "^2.9.1"
+  }
+}

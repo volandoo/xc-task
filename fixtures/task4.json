@@ -1,0 +1,61 @@
+{
+  "earthModel": "WGS84",
+  "goal": { "deadline": "16:00:00Z", "type": "LINE" },
+  "sss": { "direction": "EXIT", "timeGates": ["06:00:00Z"], "type": "RACE" },
+  "taskType": "CLASSIC",
+  "turnpoints": [
+    {
+      "radius": 50,
+      "type": "SSS",
+      "waypoint": {
+        "altSmoothed": 917,
+        "description": "G.BALDOVAR.0916",
+        "lat": 39.895503997802734,
+        "lon": -1.0376778841018677,
+        "name": "G.BALDOVAR.0916"
+      }
+    },
+    {
+      "radius": 50,
+      "waypoint": {
+        "altSmoothed": 1389,
+        "description": "D.SE.CERRONEGRO.1376",
+        "lat": 39.929779052734375,
+        "lon": -1.0387481451034546,
+        "name": "D.SE.CERRONEGRO.1376"
+      }
+    },
+    {
+      "radius": 50,
+      "waypoint": {
+        "altSmoothed": 1295,
+        "description": "P.GEO.CABEZO.1291",
+        "lat": 39.8665885925293,
+        "lon": -0.9855029582977295,
+        "name": "P.GEO.CABEZO.1291"
+      }
+    },
+    {
+      "radius": 50,
+      "waypoint": {
+        "altSmoothed": 1069,
+        "description": "D.SE.LALOMA.1067",
+        "lat": 39.8723030090332,
+        "lon": -1.0592553615570068,
+        "name": "D.SE.LALOMA.1067"
+      }
+    },
+    {
+      "radius": 50,
+      "type": "ESS",
+      "waypoint": {
+        "altSmoothed": 917,
+        "description": "G.BALDOVAR.0916",
+        "lat": 39.895503997802734,
+        "lon": -1.0376778841018677,
+        "name": "G.BALDOVAR.0916"
+      }
+    }
+  ],
+  "version": 1
+}
