@@ -18,32 +18,19 @@ type LatLng = {
   lon: number;
 };
 
-type Marker = {
-  name: string;
-  lat: number;
-  lon: number;
-};
-
-type Polyline = {
-  path: LatLng[];
-  strokeColor: string;
-  strokeOpacity: number;
-  strokeWeight: number;
-};
-
 const INT_MAX = Number.MAX_SAFE_INTEGER;
 
-export type WayPoint = {
-  type: "takeoff" | "start" | "ess" | "goal" | "turn";
+export type Waypoint = {
   latLng: LatLng;
-  mode?: "entry" | "exit";
   radius: number;
+  type?: "takeoff" | "start" | "ess" | "goal" | "turn";
+  mode?: "entry" | "exit";
   goalType?: "line";
 };
 
 const geod = geodesic.Geodesic.WGS84;
 
-const checkStartDirection = (turnpoints: WayPoint[]) => {
+const checkStartDirection = (turnpoints: Waypoint[]) => {
   let startIndex = -1;
   for (let i = 0; i < turnpoints.length; i++) {
     if (turnpoints[i].type == "start") {
@@ -444,7 +431,7 @@ const createCircle = (lat: number, lon: number, rad: number) => {
   return turf.circle(center, rad, options).geometry;
 };
 
-const createCylinders = (waypoints: WayPoint[]) => {
+const createCylinders = (waypoints: Waypoint[]): turf.Feature[] => {
   return waypoints.map((waypoint, index) => {
     const color =
       waypoint.type === "takeoff"
@@ -475,7 +462,7 @@ const createCylinders = (waypoints: WayPoint[]) => {
   });
 };
 
-const createLine = (waypoints: LatLng[]) => {
+const createLine = (waypoints: LatLng[]): turf.Feature => {
   return {
     type: "Feature",
     properties: {
@@ -490,9 +477,14 @@ const createLine = (waypoints: LatLng[]) => {
   };
 };
 
-const optimizeTask = (turnpoints: WayPoint[]) => {
-  const optimizedMarkers: Marker[] = [];
-  const fastWaypoints: LatLng[] = [];
+type Result = {
+  geojson: turf.FeatureCollection;
+  distance: number;
+  distances: number[];
+  waypoints: LatLng[];
+};
+const optimizeTask = (turnpoints: Waypoint[]): Result => {
+  const waypoints: LatLng[] = [];
 
   checkStartDirection(turnpoints);
 
@@ -576,28 +568,19 @@ const optimizeTask = (turnpoints: WayPoint[]) => {
 
   for (let i = 0; i < turnpoints.length; i++) {
     const fl = utm2degress(points[i].fx, points[i].fy, zone);
-    fastWaypoints.push({ lat: fl[1], lon: fl[0] });
+    waypoints.push({ lat: fl[1], lon: fl[0] });
   }
 
-  for (let i = 0; i < fastWaypoints.length; i++) {
-    optimizedMarkers.push({
-      name:
-        i == ss ? "markerImageSS" : i == es ? "markerImageES" : "markerImage",
-      lat: fastWaypoints[i].lat,
-      lon: fastWaypoints[i].lon,
-    });
-  }
-
-  const distances = recalcDistance(fastWaypoints);
+  const distances = recalcDistance(waypoints);
 
   return {
     geojson: {
       type: "FeatureCollection",
-      features: [...createCylinders(turnpoints), createLine(fastWaypoints)],
+      features: [...createCylinders(turnpoints), createLine(waypoints)],
     },
     distance,
     distances,
-    fastWaypoints,
+    waypoints,
   };
 };
 

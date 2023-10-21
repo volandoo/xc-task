@@ -1,5 +1,5 @@
-import task5 from "../fixtures/task5.json";
-import createTask, { WayPoint } from "./task";
+import task5 from "./fixtures/task5.json";
+import createTask, { Waypoint } from "../src/task";
 
 type WP = {
   type?: string;
@@ -11,7 +11,7 @@ const main = () => {
   const turnpoints = task5.turnpoints.map((t: WP, i) => {
     const goal = i === task5.turnpoints.length - 1;
     const ess = i === task5.turnpoints.length - 2;
-    const point: WayPoint = {
+    const point: Waypoint = {
       radius: t.radius,
       type:
         t.type === "TAKEOFF" || i === 0

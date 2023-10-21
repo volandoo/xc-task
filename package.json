@@ -1,13 +1,17 @@
 {
-  "name": "task-geojson",
-  "version": "1.0.0",
+  "name": "xc-task",
+  "version": "1.0.5",
   "description": "",
-  "main": "dist/src/app.js",
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
   "scripts": {
-    "start": "tsc && node dist/src/app.js"
+    "test": "tsc && node dist/src/test.js",
+    "publish": "tsc && npm publish",
+    "build": "tsc"
   },
-  "author": "",
-  "license": "ISC",
+  "module": "dist/main.js",
+  "author": "Pedro at Volandoo",
+  "license": "LGPL-2.1-or-later",
   "devDependencies": {
     "@types/proj4": "^2.5.4",
     "install": "^0.13.0",
