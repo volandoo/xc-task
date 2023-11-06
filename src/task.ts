@@ -1,6 +1,7 @@
 import * as turf from "@turf/turf";
-import geodesic from "geographiclib-geodesic";
+import { Geodesic, GeodesicLine } from "geographiclib-geodesic";
 import proj4 from "proj4";
+import { LatLng, Waypoint } from "./types";
 
 type ShortPoint = {
   x: number;
@@ -13,22 +14,9 @@ type Point = ShortPoint & {
   fy: number;
 };
 
-type LatLng = {
-  lat: number;
-  lon: number;
-};
-
 const INT_MAX = Number.MAX_SAFE_INTEGER;
 
-export type Waypoint = {
-  latLng: LatLng;
-  radius: number;
-  type?: "takeoff" | "start" | "ess" | "goal" | "turn";
-  mode?: "entry" | "exit";
-  goalType?: "line";
-};
-
-const geod = geodesic.Geodesic.WGS84;
+const geod = Geodesic.WGS84;
 
 const checkStartDirection = (turnpoints: Waypoint[]) => {
   let startIndex = -1;
@@ -46,8 +34,10 @@ const checkStartDirection = (turnpoints: Waypoint[]) => {
     turnpoints[startIndex + 1].latLng
   );
   if (distance > turnpoints[startIndex].radius) {
+    // @ts-ignore
     turnpoints[startIndex].mode = "exit";
   } else {
+    // @ts-ignore
     turnpoints[startIndex].mode = "entry";
   }
 };
@@ -410,7 +400,12 @@ const computeOffset = (
   radius: number,
   heading: number
 ): LatLng => {
-  let gl = new geodesic.GeodesicLine(geod, latLng1.lat, latLng1.lon, heading);
+  let gl = new GeodesicLine.GeodesicLine(
+    geod,
+    latLng1.lat,
+    latLng1.lon,
+    heading
+  );
   let p = gl.GenPosition(false, radius);
   return { lat: p.lat2, lon: p.lon2 };
 };
@@ -446,6 +441,7 @@ const createCylinders = (waypoints: Waypoint[]): turf.Feature[] => {
     return {
       type: "Feature",
       properties: {
+        type: "circle",
         name: `Waypoint ${index}`,
         stroke: color,
         fill: color,
@@ -466,6 +462,7 @@ const createLine = (waypoints: LatLng[]): turf.Feature => {
   return {
     type: "Feature",
     properties: {
+      type: "line",
       name: "Line Feature 1",
       stroke: "#204d74",
       "stroke-width": 1,
@@ -524,8 +521,7 @@ const optimizeTask = (turnpoints: Waypoint[]): Result => {
   const goalLine: ShortPoint[] = [];
   if (
     g > 0 &&
-    turnpoints[g].type == "goal" &&
-    turnpoints[g].goalType == "line"
+    turnpoints[g].type == "goal" /* && turnpoints[g].goalType == "line" */
   ) {
     let i = g - 1;
     let pastTurnpoint = turnpoints[g - 1];
@@ -576,7 +572,7 @@ const optimizeTask = (turnpoints: Waypoint[]): Result => {
   return {
     geojson: {
       type: "FeatureCollection",
-      features: [...createCylinders(turnpoints), createLine(waypoints)],
+      features: [createLine(waypoints), ...createCylinders(turnpoints)],
     },
     distance,
     distances,

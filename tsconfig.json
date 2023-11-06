@@ -11,6 +11,6 @@
     "declarationMap": true
   },
   "include": ["src/**/*"],
-  "exclude": ["test/**/*"],
+  "exclude": ["src/test.ts"],
   "lib": ["es2015"]
 }

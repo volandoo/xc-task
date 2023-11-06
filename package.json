@@ -1,11 +1,11 @@
 {
   "name": "xc-task",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "description": "",
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
   "scripts": {
-    "test": "tsc && node dist/src/test.js",
+    "test": "tsc && node dist/test.js",
     "publish": "tsc && npm publish",
     "build": "tsc"
   },
@@ -13,6 +13,7 @@
   "author": "Pedro at Volandoo",
   "license": "LGPL-2.1-or-later",
   "devDependencies": {
+    "@types/node": "^20.8.10",
     "@types/proj4": "^2.5.4",
     "install": "^0.13.0",
     "typescript": "^5.2.2"
@@ -20,6 +21,7 @@
   "dependencies": {
     "@turf/turf": "^6.5.0",
     "geographiclib-geodesic": "^2.0.0",
-    "proj4": "^2.9.1"
+    "proj4": "^2.9.1",
+    "xml2json": "^0.12.0"
   }
 }
