@@ -1,7 +1,7 @@
 import * as turf from "@turf/turf";
 import { Geodesic, GeodesicLine } from "geographiclib-geodesic";
 import proj4 from "proj4";
-import { LatLng, Waypoint } from "./types";
+import { LatLng, Result, Waypoint } from "./types";
 
 type ShortPoint = {
   x: number;
@@ -474,13 +474,7 @@ const createLine = (waypoints: LatLng[]): turf.Feature => {
   };
 };
 
-type Result = {
-  geojson: turf.FeatureCollection;
-  distance: number;
-  distances: number[];
-  waypoints: LatLng[];
-};
-const optimizeTask = (turnpoints: Waypoint[]): Result => {
+const optimizeTask = (turnpoints: Waypoint[], goalType?: "line"): Result => {
   const waypoints: LatLng[] = [];
 
   checkStartDirection(turnpoints);
@@ -519,10 +513,7 @@ const optimizeTask = (turnpoints: Waypoint[]): Result => {
   }
 
   const goalLine: ShortPoint[] = [];
-  if (
-    g > 0 &&
-    turnpoints[g].type == "goal" /* && turnpoints[g].goalType == "line" */
-  ) {
+  if (g > 0 && turnpoints[g].type == "goal" && goalType == "line") {
     let i = g - 1;
     let pastTurnpoint = turnpoints[g - 1];
     while (i > 0 && pastTurnpoint.latLng == turnpoints[g].latLng) {

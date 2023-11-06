@@ -1,12 +1,11 @@
 {
   "name": "xc-task",
-  "version": "1.0.8",
+  "version": "1.0.11",
   "description": "",
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
   "scripts": {
     "test": "tsc && node dist/test.js",
-    "publish": "tsc && npm publish",
     "build": "tsc"
   },
   "module": "dist/main.js",

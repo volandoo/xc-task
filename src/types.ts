@@ -1,3 +1,5 @@
+import * as turf from "@turf/turf";
+
 export type LatLng = {
   lat: number;
   lon: number;
@@ -12,4 +14,11 @@ export type Waypoint = {
 export type Task = {
   waypoints: Waypoint[];
   startTime: number; // timestamp utc
+};
+
+export type Result = {
+  geojson: turf.FeatureCollection;
+  distance: number;
+  distances: number[];
+  waypoints: LatLng[];
 };

@@ -17,6 +17,9 @@ const main = () => {
   xctsk = fs.readFileSync("./test/fixtures/task5.xctsk");
   processed = processTask(parseXctsk(xctsk.toString()).waypoints);
   console.log({ distance: processed.distance, distances: processed.distances });
+  xctsk = fs.readFileSync("./test/fixtures/task6.xctsk");
+  processed = processTask(parseXctsk(xctsk.toString()).waypoints);
+  console.log({ distance: processed.distance, distances: processed.distances });
 };
 
 main();
