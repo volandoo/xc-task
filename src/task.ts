@@ -18,30 +18,6 @@ const INT_MAX = Number.MAX_SAFE_INTEGER;
 
 const geod = Geodesic.WGS84;
 
-const checkStartDirection = (turnpoints: Waypoint[]) => {
-  let startIndex = -1;
-  for (let i = 0; i < turnpoints.length; i++) {
-    if (turnpoints[i].type == "start") {
-      startIndex = i;
-      break;
-    }
-  }
-  if (startIndex == -1 || startIndex == turnpoints.length - 1) {
-    return;
-  }
-  const distance = computeDistanceBetweenLatLng(
-    turnpoints[startIndex].latLng,
-    turnpoints[startIndex + 1].latLng
-  );
-  if (distance > turnpoints[startIndex].radius) {
-    // @ts-ignore
-    turnpoints[startIndex].mode = "exit";
-  } else {
-    // @ts-ignore
-    turnpoints[startIndex].mode = "entry";
-  }
-};
-
 const recalcDistance = (waypoints: LatLng[]) => {
   const distances: number[] = [];
   if (waypoints.length > 1) {
@@ -485,10 +461,12 @@ const createLine = (waypoints: LatLng[]): turf.Feature => {
   };
 };
 
-const optimizeTask = (turnpoints: Waypoint[], goalType?: "line") => {
+const processTask = (
+  turnpoints: Waypoint[],
+  goalType?: "line",
+  geojson?: boolean
+) => {
   const waypoints: LatLng[] = [];
-
-  checkStartDirection(turnpoints);
 
   let zone = 33; // just default if not valid turnpoits yet
   if (turnpoints.length > 0) {
@@ -499,14 +477,10 @@ const optimizeTask = (turnpoints: Waypoint[], goalType?: "line") => {
   }
 
   let es = turnpoints.length - 1;
-  let ss = 1;
   let g = turnpoints.length - 1;
   for (let i = 0; i < turnpoints.length; i++) {
     if (turnpoints[i].type == "ess") {
       es = i;
-    }
-    if (turnpoints[i].type == "start") {
-      ss = i;
     }
     if (turnpoints[i].type == "goal") {
       g = i;
@@ -569,16 +543,17 @@ const optimizeTask = (turnpoints: Waypoint[], goalType?: "line") => {
 
   const distances = recalcDistance(waypoints);
 
-  return [distance, distances];
-  // return {
-  //   geojson: {
-  //     type: "FeatureCollection",
-  //     features: [createLine(waypoints), ...createCylinders(turnpoints)],
-  //   },
-  //   distance,
-  //   distances,
-  //   waypoints,
-  // };
+  return {
+    geojson: geojson
+      ? {
+          type: "FeatureCollection",
+          features: [createLine(waypoints), ...createCylinders(turnpoints)],
+        }
+      : null,
+    distance,
+    distances,
+    waypoints,
+  };
 };
 
-export default optimizeTask;
+export default processTask;

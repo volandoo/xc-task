@@ -17,7 +17,7 @@ export type Task = {
 };
 
 export type Result = {
-  geojson: turf.FeatureCollection;
+  geojson: turf.FeatureCollection | null;
   distance: number;
   distances: number[];
   waypoints: LatLng[];
