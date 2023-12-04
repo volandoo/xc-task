@@ -385,10 +385,27 @@ const getUtmZoneFromPosition = (lon: number, lat: number) => {
   return (Math.floor((lon + 180) / 6) % 60) + 1;
 };
 
+// Cache the Converter for a 10x performance increase
+const utms: { [zone: number]: proj4.Converter } = {};
+
 const degrees2utm = (lon: number, lat: number, zone: number) => {
-  const utm = "+proj=utm +zone=" + zone;
-  const wgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
-  return proj4(wgs84, utm, [lon, lat]);
+  if (!utms[zone]) {
+    utms[zone] = proj4(
+      "+proj=utm +zone=" + zone,
+      "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+    );
+  }
+  return utms[zone].inverse([lon, lat]);
+};
+
+const utm2degress = (x: number, y: number, zone: number) => {
+  if (!utms[zone]) {
+    utms[zone] = proj4(
+      "+proj=utm +zone=" + zone,
+      "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+    );
+  }
+  return utms[zone].forward([x, y]);
 };
 
 const computeHeading = (latLng1: LatLng, latLng2: LatLng) => {
@@ -408,12 +425,6 @@ const computeOffset = (
   );
   let p = gl.GenPosition(false, radius);
   return { lat: p.lat2, lon: p.lon2 };
-};
-
-const utm2degress = (x: number, y: number, zone: number) => {
-  const utm = "+proj=utm +zone=" + zone;
-  const wgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
-  return proj4(utm, wgs84, [x, y]);
 };
 
 const computeDistanceBetweenLatLng = (wpt1: LatLng, wpt2: LatLng) => {
@@ -474,7 +485,7 @@ const createLine = (waypoints: LatLng[]): turf.Feature => {
   };
 };
 
-const optimizeTask = (turnpoints: Waypoint[], goalType?: "line"): Result => {
+const optimizeTask = (turnpoints: Waypoint[], goalType?: "line") => {
   const waypoints: LatLng[] = [];
 
   checkStartDirection(turnpoints);
@@ -511,7 +522,6 @@ const optimizeTask = (turnpoints: Waypoint[], goalType?: "line"): Result => {
     );
     points.push(createPoint(p[0], p[1], turnpoints[i].radius));
   }
-
   const goalLine: ShortPoint[] = [];
   if (g > 0 && turnpoints[g].type == "goal" && goalType == "line") {
     let i = g - 1;
@@ -552,7 +562,6 @@ const optimizeTask = (turnpoints: Waypoint[], goalType?: "line"): Result => {
   }
 
   const distance = getShortestPath(points, es, goalLine);
-
   for (let i = 0; i < turnpoints.length; i++) {
     const fl = utm2degress(points[i].fx, points[i].fy, zone);
     waypoints.push({ lat: fl[1], lon: fl[0] });
@@ -560,15 +569,16 @@ const optimizeTask = (turnpoints: Waypoint[], goalType?: "line"): Result => {
 
   const distances = recalcDistance(waypoints);
 
-  return {
-    geojson: {
-      type: "FeatureCollection",
-      features: [createLine(waypoints), ...createCylinders(turnpoints)],
-    },
-    distance,
-    distances,
-    waypoints,
-  };
+  return [distance, distances];
+  // return {
+  //   geojson: {
+  //     type: "FeatureCollection",
+  //     features: [createLine(waypoints), ...createCylinders(turnpoints)],
+  //   },
+  //   distance,
+  //   distances,
+  //   waypoints,
+  // };
 };
 
 export default optimizeTask;
