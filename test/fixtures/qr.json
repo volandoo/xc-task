@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "taskType": "CLASSIC",
+  "t": [
+    { "z": "ivpNyplbGoaBgE", "n": "D03157", "t": 2 },
+    { "z": "yzjNgqkbGokCgE", "n": "TP10224", "t": 3 },
+    { "z": "oxhMyo{aGsxC?", "n": "TP21245" },
+    { "z": "aelOeyhbGmJoK", "n": "A0318" }
+  ],
+  "s": { "t": 1, "d": 2, "g": ["10:00:00Z"] },
+  "g": { "t": 2, "d": "21:00:00Z" }
+}
