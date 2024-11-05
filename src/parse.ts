@@ -1,140 +1,130 @@
 import { Task, Waypoint } from "./types";
 
 type XCTask = {
-  turnpoints: {
-    waypoint: {
-      name: string;
-      description: string;
-      lat: number;
-      lon: number;
-      altSmoothed: number;
+    turnpoints: {
+        waypoint: {
+            name: string;
+            description: string;
+            lat: number;
+            lon: number;
+            altSmoothed: number;
+        };
+        radius: number;
+        type: string;
+    }[];
+    sss?: {
+        type: string;
+        direction: string;
+        timeGates: string[];
     };
-    radius: number;
-    type: string;
-  }[];
-  sss?: {
-    type: string;
-    direction: string;
-    timeGates: string[];
-  };
+    goal: {
+        type: "LINE" | "CYLINDER";
+    };
 };
 
-export var parseXctsk = function (text: string): Task {
-  var task = JSON.parse(text) as XCTask;
+export const parseXctsk = function (text: string): Task {
+    var task = JSON.parse(text) as XCTask;
 
-  const waypoints = task.turnpoints.map((t, i) => {
-    const goal = i === task.turnpoints.length - 1;
-    const ess = i === task.turnpoints.length - 2;
-    const point: Waypoint = {
-      radius: t.radius,
-      type:
-        t.type === "TAKEOFF" || i === 0
-          ? "takeoff"
-          : i === 1
-          ? "start"
-          : t.type === "ESS" || ess
-          ? "ess"
-          : t.type === "GOAL" || goal
-          ? "goal"
-          : "turn",
-      latLng: { lat: t.waypoint.lat, lon: t.waypoint.lon },
+    const waypoints = task.turnpoints.map((t, i) => {
+        const goal = i === task.turnpoints.length - 1;
+        const ess = i === task.turnpoints.length - 2;
+        const point: Waypoint = {
+            radius: t.radius || 400,
+            type:
+                t.type === "TAKEOFF" || i === 0
+                    ? "takeoff"
+                    : t.type === "SSS" || i === 1
+                    ? "start"
+                    : t.type === "ESS" || ess
+                    ? "ess"
+                    : t.type === "GOAL" || goal
+                    ? "goal"
+                    : "turn",
+            latLng: { lat: t.waypoint.lat, lon: t.waypoint.lon },
+        };
+        return point;
+    });
+
+    let startTime = 0;
+    const time = task.sss?.timeGates[0].replace("Z", "");
+    if (time) {
+        const parts = time.split(":");
+        startTime = new Date().setUTCHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]), 0).valueOf();
+    }
+    return {
+        waypoints,
+        startTime,
+        goalType: task.goal.type === "LINE" ? "line" : "cylinder",
     };
-    return point;
-  });
-
-  let startTime = 0;
-  const time = task.sss?.timeGates[0].replace("Z", "");
-  if (time) {
-    const parts = time.split(":");
-    startTime = new Date()
-      .setUTCHours(
-        parseInt(parts[0]),
-        parseInt(parts[1]),
-        parseInt(parts[2]),
-        0
-      )
-      .valueOf();
-  }
-  return {
-    waypoints,
-    startTime,
-  };
 };
 
 enum WayPointTypes {
-  TAKEOFF = "takeoff",
-  SSS_ENTER = "start",
-  SSS_EXIT = "turn",
-  ESS_ENTER = "ess",
-  GOL_CILINDRO = "goal",
-  GOL_LINEA = "goal",
-  TUP_ENTER = "turn",
+    TAKEOFF = "takeoff",
+    SSS_ENTER = "start",
+    SSS_EXIT = "turn",
+    ESS_ENTER = "ess",
+    GOL_CILINDRO = "goal",
+    GOL_LINEA = "goal",
+    TUP_ENTER = "turn",
 }
 
 type QRSimple = {
-  T: "W";
-  V: 2;
-  t: { n: string; z: string }[];
+    T: "W";
+    V: 2;
+    t: { n: string; z: string }[];
 };
 type QRComplete = {
-  taskType: "CLASSIC";
-  version: 2;
-  t: { n: string; d: string; z: string; t?: number }[];
+    taskType: "CLASSIC";
+    version: 2;
+    t: { n: string; d: string; z: string; t?: number }[];
 };
 const parseXctskQRSimple = (data: QRSimple): Waypoint[] => {
-  const factor = Math.pow(10, 5);
-  const result: Waypoint[] = [];
-  for (let i = 0; i < data.t.length; i++) {
-    const arr = decode(data.t[i].z);
-    result.push({
-      latLng: {
-        lon: arr[0] / factor,
-        lat: arr[1] / factor,
-      },
-      radius: 0,
-    });
-  }
+    const factor = Math.pow(10, 5);
+    const result: Waypoint[] = [];
+    for (let i = 0; i < data.t.length; i++) {
+        const arr = decode(data.t[i].z);
+        result.push({
+            latLng: {
+                lon: arr[0] / factor,
+                lat: arr[1] / factor,
+            },
+            radius: 0,
+        });
+    }
 
-  return result;
+    return result;
 };
 
 const parseXctskQRComplete = (data: QRComplete): Waypoint[] => {
-  const factor = Math.pow(10, 5);
-  const result: Waypoint[] = [];
-  for (let i = 0; i < data.t.length; i++) {
-    const { z, t } = data.t[i];
-    const arr = decode(z);
-    result.push({
-      latLng: {
-        lon: arr[0] / factor,
-        lat: arr[1] / factor,
-      },
-      radius: arr[3],
-      type:
-        t == 2
-          ? "start"
-          : t == 3
-          ? "ess"
-          : i === data.t.length - 1
-          ? "goal"
-          : "turn",
-    });
-  }
+    const factor = Math.pow(10, 5);
+    const result: Waypoint[] = [];
+    for (let i = 0; i < data.t.length; i++) {
+        const { z, t } = data.t[i];
+        const arr = decode(z);
+        result.push({
+            latLng: {
+                lon: arr[0] / factor,
+                lat: arr[1] / factor,
+            },
+            radius: arr[3],
+            type: t == 2 ? "start" : t == 3 ? "ess" : i === data.t.length - 1 ? "goal" : "turn",
+        });
+    }
 
-  return result;
+    return result;
 };
 
 export var parseXctskQR = function (text: string): Waypoint[] {
-  const resp: Waypoint[] = [];
+    const resp: Waypoint[] = [];
 
-  if (text.indexOf("XCTSK:") > -1) {
-    const task = JSON.parse(text.replace("XCTSK:", "")) as QRComplete;
-    return parseXctskQRComplete(task);
-  } else {
-    const task = JSON.parse(text) as QRSimple;
-    return parseXctskQRSimple(task);
-  }
-  /*
+    if (text.indexOf("XCTSK:") > -1) {
+        const task = JSON.parse(text.replace("XCTSK:", "")) as QRComplete;
+        return parseXctskQRComplete(task);
+    } else {
+        const task = JSON.parse(text) as QRSimple;
+        return parseXctskQRSimple(task);
+    }
+    /*
   if (task[])
   const goal: { t: string } = task["g"] || { t: "" };
   const startPoint: { g: string; d: string } = task["s"] || {
@@ -226,21 +216,21 @@ export var parseXctskQR = function (text: string): Waypoint[] {
 };
 
 export const decode = function (encodedPath: string, precision = 5) {
-  const response: number[] = [];
+    const response: number[] = [];
 
-  let index = 0;
-  for (let i = 0; i < 4; i++) {
-    // Fully unrolling the following loops speeds things up about 5%.
-    let result = 1;
-    let shift = 0;
-    let b: number;
-    do {
-      b = encodedPath.charCodeAt(index++) - 63 - 1;
-      result += b << shift;
-      shift += 5;
-    } while (b >= 0x1f);
-    response.push(result & 1 ? ~(result >> 1) : result >> 1);
-  }
+    let index = 0;
+    for (let i = 0; i < 4; i++) {
+        // Fully unrolling the following loops speeds things up about 5%.
+        let result = 1;
+        let shift = 0;
+        let b: number;
+        do {
+            b = encodedPath.charCodeAt(index++) - 63 - 1;
+            result += b << shift;
+            shift += 5;
+        } while (b >= 0x1f);
+        response.push(result & 1 ? ~(result >> 1) : result >> 1);
+    }
 
-  return response;
+    return response;
 };

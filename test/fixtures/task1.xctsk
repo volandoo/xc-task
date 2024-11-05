@@ -61,7 +61,7 @@
     },
     "goal":
     {
-        "type": "CYLINDER",
+        "type": "LINE",
         "deadline": "17:00:00Z"
     },
     "earthModel": "WGS84"
