@@ -459,7 +459,7 @@ const createLine = (waypoints: LatLng[]): turf.Feature => {
     };
 };
 
-const processTask = (turnpoints: Waypoint[], goalType?: "line", geojson?: boolean) => {
+const processTask = (turnpoints: Waypoint[], goalType?: "cylinder" | "line", geojson?: boolean) => {
     const waypoints: LatLng[] = [];
 
     let zone = 33; // just default if not valid turnpoits yet

@@ -17,7 +17,7 @@ type XCTask = {
         direction: string;
         timeGates: string[];
     };
-    goal: {
+    goal?: {
         type: "LINE" | "CYLINDER";
     };
 };
@@ -54,7 +54,7 @@ export const parseXctsk = function (text: string): Task {
     return {
         waypoints,
         startTime,
-        goalType: task.goal.type === "LINE" ? "line" : "cylinder",
+        goalType: task.goal?.type === "LINE" ? "line" : "cylinder",
     };
 };
 
