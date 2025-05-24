@@ -1,6 +1,6 @@
 import { Task, Waypoint } from "./types";
 
-type XCTask = {
+export type XCTask = {
     turnpoints: {
         waypoint: {
             name: string;
@@ -22,8 +22,9 @@ type XCTask = {
     };
 };
 
-export const parseXctsk = function (text: string): Task {
-    var task = JSON.parse(text) as XCTask;
+export const parseXctsk = function (xctask: string | XCTask): Task {
+
+    const task = typeof xctask === "string" ? JSON.parse(xctask) as XCTask : xctask;
 
     const waypoints = task.turnpoints.map((t, i) => {
         const goal = i === task.turnpoints.length - 1;
@@ -58,15 +59,6 @@ export const parseXctsk = function (text: string): Task {
     };
 };
 
-enum WayPointTypes {
-    TAKEOFF = "takeoff",
-    SSS_ENTER = "start",
-    SSS_EXIT = "turn",
-    ESS_ENTER = "ess",
-    GOL_CILINDRO = "goal",
-    GOL_LINEA = "goal",
-    TUP_ENTER = "turn",
-}
 
 type QRSimple = {
     T: "W";
