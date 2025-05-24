@@ -76,7 +76,7 @@ export class TaskScorer {
         return true;
     }
 
-    public results(): TaskScore {
+    results() {
         if (!this.process()) {
             return {
                 goal: 0,
@@ -87,8 +87,8 @@ export class TaskScorer {
         }
         const togoal = this.distanceLeft();
         return {
-            goal: this.currentStep.wpts[this.currentStep.wpts.length - 1]?.time || 0,
-            ess: this.currentStep.wpts[this.currentStep.wpts.length - 2]?.time || 0,
+            goal: this.currentStep.wpts[this.task.length - 1]?.time || 0,
+            ess: this.currentStep.wpts[this.task.length - 2]?.time || 0,
             togoal,
             wpts: this.currentStep.wpts,
         };
@@ -113,7 +113,7 @@ export class TaskScorer {
         const toNext = this.distance(point, waypoint) - waypoint.rad;
         const dists = this.distances.slice(this.currentStep.next);
         const distancesLeft = dists.reduce((acc, cur) => acc + cur, 0);
-        return Math.round(toNext + distancesLeft);
+        return toNext + distancesLeft;
     }
 
     private distance(trackPoint: TrackPoint, wayPoint: WayPoint) {
