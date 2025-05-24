@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "taskType": "CLASSIC",
+  "turnpoints": [
+    {
+      "radius": 400,
+      "waypoint": {
+        "lon": -5.415780067443848,
+        "lat": 36.89485168457031,
+        "altSmoothed": 910,
+        "name": "D01091"
+      },
+      "type": "TAKEOFF"
+    },
+    {
+      "radius": 17000,
+      "waypoint": {
+        "lon": -5.546979904174805,
+        "lat": 37.005489349365234,
+        "altSmoothed": 510,
+        "name": "D04051"
+      },
+      "type": "SSS"
+    },
+    {
+      "radius": 1500,
+      "waypoint": {
+        "lon": -5.255119800567627,
+        "lat": 36.74116897583008,
+        "altSmoothed": 890,
+        "name": "C52089"
+      }
+    },
+    {
+      "radius": 300,
+      "waypoint": {
+        "lon": -5.190790176391602,
+        "lat": 36.859718322753906,
+        "altSmoothed": 630,
+        "name": "C38063"
+      }
+    },
+    {
+      "radius": 8000,
+      "waypoint": {
+        "lon": -5.190790176391602,
+        "lat": 36.859718322753906,
+        "altSmoothed": 630,
+        "name": "C38063"
+      }
+    },
+    {
+      "radius": 300,
+      "waypoint": {
+        "lon": -5.190790176391602,
+        "lat": 36.859718322753906,
+        "altSmoothed": 630,
+        "name": "C38063"
+      }
+    },
+    {
+      "radius": 5000,
+      "waypoint": {
+        "lon": -5.045609951019287,
+        "lat": 36.87546920776367,
+        "altSmoothed": 730,
+        "name": "C46073"
+      }
+    },
+    {
+      "radius": 2000,
+      "waypoint": {
+        "lon": -5.1142802238464355,
+        "lat": 36.737998962402344,
+        "altSmoothed": 770,
+        "name": "A47077"
+      },
+      "type": "ESS"
+    },
+    {
+      "radius": 100,
+      "waypoint": {
+        "lon": -5.1142802238464355,
+        "lat": 36.737998962402344,
+        "altSmoothed": 770,
+        "name": "A47077"
+      }
+    }
+  ],
+  "sss": {
+    "type": "RACE",
+    "direction": "EXIT",
+    "timeGates": [
+      "22:00:00Z"
+    ]
+  },
+  "goal": {
+    "type": "LINE",
+    "deadline": "17:00:00Z"
+  },
+  "earthModel": "WGS84"
+}

@@ -3,6 +3,8 @@ import { Geodesic, GeodesicLine } from "geographiclib-geodesic";
 import proj4, { Point } from "proj4";
 import { LatLng, Waypoint } from "./types";
 
+// Inspired by https://github.com/julien66/task-creator
+
 type ShortPoint = {
     x: number;
     y: number;
@@ -421,12 +423,12 @@ const createCylinders = (waypoints: Waypoint[], goalLine: LatLng[]): turf.Featur
             waypoint.type === "takeoff"
                 ? "#204d74"
                 : waypoint.type === "start"
-                ? "#ac2925"
-                : waypoint.type === "ess"
-                ? "#ac2925"
-                : waypoint.type === "goal"
-                ? "#398439"
-                : "#269abc";
+                    ? "#ac2925"
+                    : waypoint.type === "ess"
+                        ? "#ac2925"
+                        : waypoint.type === "goal"
+                            ? "#398439"
+                            : "#269abc";
         return {
             type: "Feature",
             properties: {
@@ -493,9 +495,9 @@ const processTask = (turnpoints: Waypoint[], goalType?: "cylinder" | "line", geo
     return {
         geojson: geojson
             ? {
-                  type: "FeatureCollection",
-                  features: [createLine(waypoints), ...createCylinders(turnpoints, goalline)],
-              }
+                type: "FeatureCollection",
+                features: [createLine(waypoints), ...createCylinders(turnpoints, goalline)],
+            }
             : null,
         distance,
         distances,
