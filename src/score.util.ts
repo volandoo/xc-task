@@ -11,11 +11,12 @@ export const scoreTask = (task: Task, locs: TrackPoint[]): TaskScore => {
         rad: tp.radius,
     }))
     const distances = processed.distances;
-    const locations = locs.map((loc) => ({
+    const optimalWpts = processed.waypoints
+    const track = locs.map((loc) => ({
         lat: loc.lat,
         lon: loc.lon,
         time: loc.time < 1600000000000 ? loc.time * 1000 : loc.time,
     }))
-    const scorer = new TaskScorer(wpts, distances, locations);
+    const scorer = new TaskScorer(wpts, distances,optimalWpts, track);
     return scorer.results();
 };

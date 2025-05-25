@@ -1,8 +1,8 @@
 // @jest-environment node
 import fs from "fs";
 import path from "path";
-import { parseXctsk } from "./parse";
 import { scoreTask, Task } from "./main";
+import { parseXctsk } from "./parse";
 
 
 const formatTime = (time: number) => {
@@ -54,7 +54,7 @@ describe("TaskScorer integration", () => {
     it("scores not_goal_enter.json track against task_enter.xctsk", () => {
         const not_goal = parseFile("not_goal_enter.json");
         const result = scoreTask(taskEnterCylinderOnly, not_goal);
-
+    
         expect(result.ess).toBe(0);
         expect(result.goal).toBe(0);
 
@@ -66,7 +66,7 @@ describe("TaskScorer integration", () => {
         expect(result.wpts[4]).toBeUndefined()
         expect(result.wpts[5]).toBeUndefined()
 
-        expect(result.togoal).toBe(67381);
+        expect(result.togoal).toBe(71395);
         expect(result.wpts.length).toBeLessThan(taskEnterCylinderOnly.waypoints.length);
         expect(result.wpts.length).toBe(3);
     });
@@ -87,8 +87,6 @@ describe("TaskScorer integration", () => {
         expect(formatTime(result.wpts[6].time)).toBe("14:24:06")
         expect(formatTime(result.wpts[7].time)).toBe("14:41:53")
         expect(formatTime(result.wpts[8].time)).toBe("14:44:02")
-
-        console.log(taskEnterAndExitCylinder.waypoints);
 
         expect(result.togoal).toBe(0);
         expect(result.wpts.length).toBe(taskEnterAndExitCylinder.waypoints.length);

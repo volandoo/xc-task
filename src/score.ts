@@ -28,14 +28,16 @@ export type TaskScore = {
 export class TaskScorer {
     private track: TrackPoint[];
     private waypoints: WayPoint[];
+    private optimalWpts: Omit<WayPoint, "rad">[];
     private currentStep: CurrentStep;
     private distances: number[];
 
-    constructor(waypoints: WayPoint[], distances: number[], track: TrackPoint[]) {
+    constructor(waypoints: WayPoint[], distances: number[], optimalWpts: Omit<WayPoint, "rad">[], track: TrackPoint[]) {
         this.waypoints = waypoints;
         this.track = track;
         this.distances = distances;
         this.currentStep = { next: 0, inside: true, wpts: [] };
+        this.optimalWpts = optimalWpts;
     }
 
     /**
@@ -75,7 +77,9 @@ export class TaskScorer {
         if (!firstInside) { return false; }
 
         // Set the next waypoint to check
-        this.moveToNext(this.track[startIndex]);
+        if (!this.moveToNext(this.track[startIndex])) {
+            return false;
+        }
 
         // Iterate through the track starting from the first point inside the first waypoint
         for (let i = (startIndex + 1); i < this.track.length; i++) {
@@ -130,17 +134,21 @@ export class TaskScorer {
         return true;
     }
 
+    // TODO: This will not work well when pilot lands inside an exit-waypoint
     private distanceLeft() {
-        const point = this.track[this.track.length - 1];
-        const waypoint = this.waypoints[this.currentStep.next];
-        if (!waypoint) return 0;
-        const toNext = this.distance(point, waypoint) - waypoint.rad;
-        const dists = this.distances.slice(this.currentStep.next);
-        const distancesLeft = dists.reduce((acc, cur) => acc + cur, 0);
-        return toNext + distancesLeft;
+        let point = this.track[this.track.length - 1] as Omit<TrackPoint, "time">;
+        // use the next optimal waypoint for distance calculation
+        let waypoint = this.optimalWpts[this.currentStep.next];
+        let distance = 0
+        while (waypoint != null) {
+            distance += this.distance(point, waypoint);
+            point = waypoint;
+            waypoint = this.optimalWpts[this.currentStep.next++];
+        }
+        return distance;
     }
 
-    private distance(trackPoint: TrackPoint, wayPoint: WayPoint) {
+    private distance(trackPoint: Omit<TrackPoint, "time"> | TrackPoint, wayPoint: Omit<WayPoint, "rad"> | WayPoint) {
         return turf.distance([trackPoint.lon, trackPoint.lat], [wayPoint.lon, wayPoint.lat], { units: "meters" });
     }
 
