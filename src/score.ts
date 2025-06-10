@@ -1,4 +1,6 @@
 import * as turf from "@turf/turf";
+import { Task } from "./types";
+import processTask from "./task";
 
 export type TrackPoint = {
     lat: number;
@@ -32,7 +34,22 @@ export class TaskScorer {
     private currentStep: CurrentStep;
     private distances: number[];
 
-    constructor(waypoints: WayPoint[], distances: number[], optimalWpts: Omit<WayPoint, "rad">[], track: TrackPoint[]) {
+    constructor(task: Task, track: TrackPoint[]) {
+        if (track[0].time < 1600000000000) {
+            track = track.map((t) => ({
+                ...t,
+                time: t.time * 1000,
+            }));
+        }
+        const processed = processTask(task.waypoints);
+        const waypoints = task.waypoints.map((tp) => ({
+            lat: tp.latLng.lat,
+            lon: tp.latLng.lon,
+            rad: tp.radius,
+        }));
+        const distances = processed.distances;
+        const optimalWpts = processed.waypoints;
+
         this.waypoints = waypoints;
         this.track = track;
         this.distances = distances;
@@ -43,7 +60,7 @@ export class TaskScorer {
     /**
      * Processes the track points against the task waypoints to determine if and when
      * the pilot completed each turnpoint.
-     * 
+     *
      * The function works by:
      * 1. Checking if there are enough waypoints (minimum 3) to form a valid task.
      * 2. Finding the first point where the pilot enters the start cylinder.
@@ -53,10 +70,13 @@ export class TaskScorer {
      *    - When the pilot enters a cylinder (if currently outside)
      *    - Each transition is recorded using moveToNext().
      * 5. Stops processing if all waypoints are completed or the track ends.
-     * 
+     *
      * @returns boolean - true if task was processed successfully, false if invalid
      */
-    private process() {
+    process(params: {
+        onCalculated?: (score: TaskScore, point: TrackPoint) => void;
+        callbackInterval?: number;
+    }) {
         // If there are fewer than 3 waypoints, scoring cannot proceed
         if (this.waypoints.length < 3) {
             return false;
@@ -74,7 +94,9 @@ export class TaskScorer {
         }
 
         // If no point in the track is inside the first waypoint, scoring cannot proceed
-        if (!firstInside) { return false; }
+        if (!firstInside) {
+            return false;
+        }
 
         // Set the next waypoint to check
         if (!this.moveToNext(this.track[startIndex])) {
@@ -82,7 +104,7 @@ export class TaskScorer {
         }
 
         // Iterate through the track starting from the first point inside the first waypoint
-        for (let i = (startIndex + 1); i < this.track.length; i++) {
+        for (let i = startIndex + 1; i < this.track.length; i++) {
             const point = this.track[i];
             const next = this.waypoints[this.currentStep.next];
 
@@ -102,21 +124,21 @@ export class TaskScorer {
                     if (!this.moveToNext(point)) break;
                 }
             }
+            if (params.onCalculated && i % (params.callbackInterval ?? 30) === 0) {
+                const curr = this.currentStep.next;
+                params.onCalculated(this.calculateScore(), point);
+                this.currentStep.next = curr;
+            }
         }
 
+        if (params.onCalculated) {
+            params.onCalculated(this.calculateScore(), this.track[this.track.length - 1]);
+        }
         // If all logic passes, return true
         return true;
     }
 
-    results() {
-        if (!this.process()) {
-            return {
-                goal: 0,
-                ess: 0,
-                togoal: this.distances.reduce((acc, cur) => acc + cur, 0),
-                wpts: [],
-            };
-        }
+    calculateScore() {
         const togoal = this.distanceLeft();
         return {
             goal: this.currentStep.wpts[this.waypoints.length - 1]?.time || 0,
@@ -126,10 +148,24 @@ export class TaskScorer {
         };
     }
 
+    results() {
+        if (!this.process({})) {
+            return {
+                goal: 0,
+                ess: 0,
+                togoal: this.distances.reduce((acc, cur) => acc + cur, 0),
+                wpts: [],
+            };
+        }
+        return this.calculateScore();
+    }
+
     private moveToNext(point: TrackPoint) {
         this.currentStep.wpts.push(point);
         this.currentStep.next++;
-        if (!this.waypoints[this.currentStep.next]) { return false; }
+        if (!this.waypoints[this.currentStep.next]) {
+            return false;
+        }
         this.currentStep.inside = this.isInside(point, this.waypoints[this.currentStep.next]);
         return true;
     }
@@ -139,7 +175,7 @@ export class TaskScorer {
         let point = this.track[this.track.length - 1] as Omit<TrackPoint, "time">;
         // use the next optimal waypoint for distance calculation
         let waypoint = this.optimalWpts[this.currentStep.next];
-        let distance = 0
+        let distance = 0;
         while (waypoint != null) {
             distance += this.distance(point, waypoint);
             point = waypoint;
@@ -160,4 +196,3 @@ export class TaskScorer {
         return this.distance(trackPoint, wayPoint) > wayPoint.rad;
     }
 }
-
