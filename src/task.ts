@@ -365,7 +365,7 @@ const getUtmZoneFromPosition = (lon: number, lat: number) => {
 };
 
 // Cache the Converter for a 10x performance increase
-const utms: { [zone: number]: proj4.Converter } = {};
+const utms: { [zone: number]: proj4.Converter; } = {};
 
 const degrees2utm = (lon: number, lat: number, zone: number) => {
     if (!utms[zone]) {
@@ -395,9 +395,9 @@ const computeDistanceBetweenLatLng = (wpt1: LatLng, wpt2: LatLng) => {
     return geod.Inverse(wpt1.lat, wpt1.lon, wpt2.lat, wpt2.lon).s12;
 };
 
-const createCircle = (lat: number, lon: number, rad: number) => {
-    const center = [lat, lon];
-    const options = { steps: 64, units: "meters" as turf.Units };
+const createCircle = (lon: number, lat: number, rad: number) => {
+    const center = [lon, lat];
+    const options = { steps: 256, units: "meters" as turf.Units };
     return turf.circle(center, rad, options).geometry;
 };
 
@@ -470,13 +470,9 @@ const processTask = (turnpoints: Waypoint[], goalType?: "cylinder" | "line", geo
     }
 
     let es = turnpoints.length - 2;
-    let g = turnpoints.length - 1;
     for (let i = 0; i < turnpoints.length; i++) {
         if (turnpoints[i].type == "ess") {
             es = i;
-        }
-        if (turnpoints[i].type == "goal") {
-            g = i;
         }
     }
 
