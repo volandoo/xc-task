@@ -33,8 +33,11 @@ export class TaskScorer {
     private optimalWpts: Omit<WayPoint, "rad">[];
     private currentStep: CurrentStep;
     private distances: number[];
+    private tolerance: number = 0.001; // percentage of waypoint radius to consider as inside, 1 = 100%
 
-    constructor(task: Task, track: TrackPoint[]) {
+    constructor(task: Task, track: TrackPoint[], tolerance: number = 0) {
+
+        // check if time is in seconds, otherwise convert to milliseconds
         if (track[0].time < 1600000000000) {
             track = track.map((t) => ({
                 ...t,
@@ -55,27 +58,33 @@ export class TaskScorer {
         this.distances = distances;
         this.currentStep = { next: 0, inside: true, wpts: [] };
         this.optimalWpts = optimalWpts;
+        this.tolerance = tolerance;
     }
 
     /**
      * Processes the track points against the task waypoints to determine if and when
-     * the pilot completed each turnpoint.
+     * the pilot completed each turnpoint, and optionally calls a callback with scoring updates.
      *
-     * The function works by:
-     * 1. Checking if there are enough waypoints (minimum 3) to form a valid task.
-     * 2. Finding the first point where the pilot enters the start cylinder.
-     * 3. Records this entry using moveToNext().
-     * 4. Iterates through the remaining track points, starting after the entry point, to detect:
-     *    - When the pilot exits a cylinder (if currently inside)
-     *    - When the pilot enters a cylinder (if currently outside)
-     *    - Each transition is recorded using moveToNext().
+     * The function operates as follows:
+     * 1. Validates that there are at least 3 waypoints to form a valid task.
+     * 2. Searches for the first track point inside the start cylinder (first waypoint).
+     *    - If not found, scoring cannot proceed and returns false.
+     * 3. Records this entry and sets up the next waypoint to check.
+     * 4. Iterates through the remaining track points, starting after the entry point:
+     *    - If currently inside a waypoint, checks for exit (transition to outside).
+     *    - If currently outside, checks for entry (transition to inside).
+     *    - Each transition (entry/exit) advances to the next waypoint and records the point.
+     *    - Optionally, at a specified interval, calls the onCalculated callback with the current score and point.
      * 5. Stops processing if all waypoints are completed or the track ends.
+     * 6. At the end, optionally calls the onCalculated callback one last time with the final score.
      *
-     * @returns boolean - true if task was processed successfully, false if invalid
+     * @param params.onCalculated Optional callback called with the current score and track point at intervals.
+     * @param params.calculatedInterval Interval (in track points) at which to call onCalculated (default: 30).
+     * @returns boolean - true if task was processed successfully, false if invalid or not completed.
      */
     process(params: {
         onCalculated?: (score: TaskScore, point: TrackPoint) => void;
-        callbackInterval?: number;
+        calculatedInterval?: number;
     }) {
         // If there are fewer than 3 waypoints, scoring cannot proceed
         if (this.waypoints.length < 3) {
@@ -124,9 +133,9 @@ export class TaskScorer {
                     if (!this.moveToNext(point)) break;
                 }
             }
-            if (params.onCalculated && i % (params.callbackInterval ?? 30) === 0) {
+            if (params.onCalculated && i % (params.calculatedInterval ?? 30) === 0) {
                 const curr = this.currentStep.next;
-                params.onCalculated(this.calculateScore(), point);
+                params.onCalculated(this.calculateScore(point), point);
                 this.currentStep.next = curr;
             }
         }
@@ -138,8 +147,8 @@ export class TaskScorer {
         return true;
     }
 
-    calculateScore() {
-        const togoal = this.distanceLeft();
+    calculateScore(point?: Omit<TrackPoint, "time">) {
+        const togoal = this.distanceLeft(point ?? this.track[this.track.length - 1]);
         return {
             goal: this.currentStep.wpts[this.waypoints.length - 1]?.time || 0,
             ess: this.currentStep.wpts[this.waypoints.length - 2]?.time || 0,
@@ -171,8 +180,7 @@ export class TaskScorer {
     }
 
     // TODO: This will not work well when pilot lands inside an exit-waypoint
-    private distanceLeft() {
-        let point = this.track[this.track.length - 1] as Omit<TrackPoint, "time">;
+    private distanceLeft(point: Omit<TrackPoint, "time">) {
         // use the next optimal waypoint for distance calculation
         let waypoint = this.optimalWpts[this.currentStep.next];
         let distance = 0;
@@ -189,10 +197,10 @@ export class TaskScorer {
     }
 
     private isInside(trackPoint: TrackPoint, wayPoint: WayPoint) {
-        return this.distance(trackPoint, wayPoint) <= wayPoint.rad;
+        return this.distance(trackPoint, wayPoint) <= wayPoint.rad * (1 + this.tolerance);
     }
 
     private isOutside(trackPoint: TrackPoint, wayPoint: WayPoint) {
-        return this.distance(trackPoint, wayPoint) > wayPoint.rad;
+        return this.distance(trackPoint, wayPoint) > wayPoint.rad * (1 + this.tolerance);
     }
 }

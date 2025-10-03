@@ -1,7 +1,7 @@
 // @jest-environment node
 import fs from "fs";
 import path from "path";
-import { Task, TaskScorer } from "./main";
+import { Task, TaskScore, TaskScorer } from "./main";
 import { parseXctsk } from "./parse";
 
 const formatTime = (time: number) => {
@@ -101,7 +101,7 @@ describe("TaskScorer integration", () => {
             onCalculated: (score, point) => {
                 i++;
             },
-            callbackInterval: 60,
+            calculatedInterval: 60,
         });
         expect(i).toBe(count);
     });
@@ -111,11 +111,14 @@ describe("TaskScorer integration", () => {
         const scorer = new TaskScorer(taskEnterAndExitCylinder, goal);
         const count = 374;
         let i = 0;
+        const scores: number[] = [];
         scorer.process({
             onCalculated: (score, point) => {
+                scores.push(score.wpts.length);
                 i++;
             },
         });
+        console.log(scores);
         expect(i).toBe(count);
     });
 });
