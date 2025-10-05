@@ -6,6 +6,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
+github.com/kwahome/go-haversine v0.0.0-20200217083305-41cbaf7064a6 h1:4T8lOlnOxADaaye4csmFD3jD0vb1FWZ/sBOR2DO5Kds=
+github.com/kwahome/go-haversine v0.0.0-20200217083305-41cbaf7064a6/go.mod h1:BY5j4MIyvbD6Isg5ZJPhPBVQZjD3s6f0kFW3LqKXiaI=
 github.com/paulmach/go.geojson v1.5.0 h1:7mhpMK89SQdHFcEGomT7/LuJhwhEgfmpWYVlVmLEdQw=
 github.com/paulmach/go.geojson v1.5.0/go.mod h1:DgdUy2rRVDDVgKqrjMe2vZAHMfhDTrjVKt3LmHIXGbU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
@@ -14,6 +16,8 @@ github.com/pymaxion/geographiclib-go v1.1.0 h1:fEVKhoLHLsUDomaq3fZq6pQ+BZYM9tb3o
 github.com/pymaxion/geographiclib-go v1.1.0/go.mod h1:TjKyEChLyv0keLuuXVoZxnFZLDp1JVA9Pz+FdQs4e3U=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+github.com/twpayne/go-igc v0.0.0-20250822212806-c795ea7dfc19 h1:C3f7lGrGUCra0eCkIbmbXXO5aAJU8fumWEJbZtN+m/I=
+github.com/twpayne/go-igc v0.0.0-20250822212806-c795ea7dfc19/go.mod h1:5vY9zU4RK20lo35aGvfYB2JLg5nhW+DQ282Hl5Aa9uM=
 github.com/twpayne/go-proj/v11 v11.0.0 h1:jkGRE2DOwxhbn2hPnps1wNepdCgA8JB/K8rJosVR2jM=
 github.com/twpayne/go-proj/v11 v11.0.0/go.mod h1:2qEvCqcSQqaKRxHc8K6F5THAzS/SVknfWVPnTHFqE3M=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=

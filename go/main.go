@@ -1,46 +1,88 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
+
+	geojson "github.com/paulmach/go.geojson"
+	"github.com/volandoo/go-xctask/parser"
+	"github.com/volandoo/go-xctask/solver"
+	"github.com/volandoo/go-xctask/traveler"
 )
 
 func main() {
-	var filePath string
-	flag.StringVar(&filePath, "file", "", "Path to the XCTSK JSON file")
+	// Define command line flags
+	taskFile := flag.String("task", "", "Path to the task file (.xctsk)")
+	trackFile := flag.String("track", "", "Path to the track file (.igc or .gpx)")
+
+	// Parse command line arguments
 	flag.Parse()
 
-	if filePath == "" {
-		log.Fatal("Please provide a file path using the --file flag.")
+	// Validate required arguments
+	if *taskFile == "" {
+		fmt.Fprintf(os.Stderr, "Error: --task argument is required\n")
+		flag.Usage()
+		os.Exit(1)
 	}
 
-	// Read the content of the specified file
-	fileContent, err := os.ReadFile(filePath)
+	if *trackFile == "" {
+		fmt.Fprintf(os.Stderr, "Error: --track argument is required\n")
+		flag.Usage()
+		os.Exit(1)
+	}
+	trackStr, err := os.ReadFile(*trackFile)
 	if err != nil {
-		log.Fatalf("Error reading file %s: %v", filePath, err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
-
-	// Parse the input JSON string into an XCTask struct
-	task, err := ParseXctsk(string(fileContent))
+	track, err := parser.ParseIgc(string(trackStr))
 	if err != nil {
-		log.Fatalf("Error parsing XCTask: %v", err)
+		fmt.Fprintf(os.Stderr, "1 Error: %v\n", err)
+		os.Exit(1)
 	}
 
-	// Process the task
-	result, err := processTask(task.Waypoints, task.GoalType, true)
+	taskStr, err := os.ReadFile(*taskFile)
 	if err != nil {
-		log.Fatalf("Error processing task: %v", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
-
-	// Marshal the result into a JSON string
-	outputJSON, err := json.MarshalIndent(result, "", "  ")
+	task, err := parser.ParseXctsk(string(taskStr))
 	if err != nil {
-		log.Fatalf("Error marshalling result to JSON: %v", err)
+		fmt.Fprintf(os.Stderr, "2 Error: %v\n", err)
+		os.Exit(1)
+	}
+	res := traveler.TravelTask(task, track, nil)
+
+	soverResult, err := solver.SolveTask(task.Waypoints, task.GoalType, true)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
 
-	// Print the JSON string to stdout
-	fmt.Println(string(outputJSON))
+	trackLine := [][]float64{}
+	for _, waypoint := range track {
+		// circle with diameter
+		trackLine = append(trackLine, []float64{waypoint.LatLng.Lon, waypoint.LatLng.Lat})
+	}
+
+	trackFeature := geojson.NewLineStringFeature(trackLine)
+	trackFeature.Properties = map[string]interface{}{
+		"type":         "track",
+		"name":         "Track",
+		"stroke":       "#204d74",
+		"stroke-width": 1,
+	}
+	taskGeoJson := soverResult.GeoJSON
+	taskGeoJson.AddFeature(trackFeature)
+	travelerGeoJson := traveler.GeoJson(res)
+	for _, feature := range travelerGeoJson {
+		taskGeoJson.AddFeature(&feature)
+	}
+	geoJsonBytes, err := taskGeoJson.MarshalJSON()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("GeoJSON: %v\n", string(geoJsonBytes))
 }

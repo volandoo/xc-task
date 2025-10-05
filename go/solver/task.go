@@ -1,4 +1,4 @@
-package main
+package solver
 
 import (
 	"fmt"
@@ -7,30 +7,14 @@ import (
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/pymaxion/geographiclib-go/geodesic"
 	proj "github.com/twpayne/go-proj/v11"
+	"github.com/volandoo/go-xctask/types"
 )
-
-type LatLng struct {
-	Lat float64 `json:"lat"`
-	Lon float64 `json:"lon"`
-}
-
-type Waypoint struct {
-	LatLng LatLng  `json:"latLng"`
-	Radius float64 `json:"radius"`
-	Type   string  `json:"type,omitempty"`
-}
-
-type Task struct {
-	Waypoints []Waypoint `json:"waypoints"`
-	StartTime int64      `json:"startTime"` // timestamp utc
-	GoalType  string     `json:"goalType"`
-}
 
 type Result struct {
 	GeoJSON   *geojson.FeatureCollection `json:"geojson"`
 	Distance  float64                    `json:"distance"`
 	Distances []float64                  `json:"distances"`
-	Waypoints []LatLng                   `json:"waypoints"`
+	Waypoints []types.Waypoint           `json:"waypoints"`
 }
 
 type ShortPoint struct {
@@ -43,6 +27,75 @@ type Point struct {
 	Radius float64 `json:"radius"`
 	Fx     float64 `json:"fx"`
 	Fy     float64 `json:"fy"`
+}
+
+func SolveTask(turnpoints []types.Waypoint, goalType string, makeGeojson bool) (Result, error) {
+	var waypoints []types.Waypoint
+
+	zone := 33 // just default if not valid turnpoits yet
+	if len(turnpoints) > 0 {
+		zone = getUtmZoneFromPosition(turnpoints[0].LatLng.Lon, turnpoints[0].LatLng.Lat)
+	}
+
+	es := len(turnpoints) - 2
+	for i, tp := range turnpoints {
+		if tp.Type == "ess" {
+			es = i
+		}
+	}
+
+	points := make([]Point, len(turnpoints))
+	for i, tp := range turnpoints {
+		p, err := degrees2utm(tp.LatLng.Lon, tp.LatLng.Lat, zone)
+
+		if err != nil {
+			return Result{}, err
+		}
+		points[i] = createPoint(p[0], p[1], tp.Radius)
+	}
+
+	distance, directions, goalline := getShortestPath(points, es, goalType == "line", zone)
+	for i := range points {
+		fl, err := utm2degress(points[i].Fx, points[i].Fy, zone)
+		if err != nil {
+			return Result{}, err
+		}
+		if i == 1 {
+			// if first waypoint is ess, then direction should be "exit"
+			if computeDistanceBetweentLatLng(
+				turnpoints[0].LatLng,
+				turnpoints[1].LatLng,
+			) < turnpoints[1].Radius {
+				directions[1] = "exit"
+			}
+		}
+		waypoints = append(waypoints, types.Waypoint{
+			LatLng: types.LatLng{
+				Lat: fl[1], Lon: fl[0],
+			},
+			Radius:    points[i].Radius,
+			Direction: directions[i],
+		})
+	}
+	distances := recalcDistance(waypoints)
+
+	var featureCollection *geojson.FeatureCollection
+	if makeGeojson {
+		featureCollection = geojson.NewFeatureCollection()
+		line := createLine(waypoints)
+		featureCollection.AddFeature(line)
+		cylinders := createCylinders(turnpoints, goalline)
+		for _, cylinder := range cylinders {
+			featureCollection.AddFeature(cylinder)
+		}
+	}
+
+	return Result{
+		GeoJSON:   featureCollection,
+		Distance:  distance,
+		Distances: distances,
+		Waypoints: waypoints,
+	}, nil
 }
 
 const INT_MAX = math.MaxInt64
@@ -62,11 +115,11 @@ func getProj(zone int) (*proj.PJ, error) {
 	return utms[zone], nil
 }
 
-func recalcDistance(waypoints []LatLng) []float64 {
+func recalcDistance(waypoints []types.Waypoint) []float64 {
 	var distances []float64
 	if len(waypoints) > 1 {
 		for i := 0; i < len(waypoints)-1; i++ {
-			distance := computeDistanceBetweenLatLng(waypoints[i], waypoints[i+1])
+			distance := computeDistanceBetweentLatLng(waypoints[i].LatLng, waypoints[i+1].LatLng)
 			distances = append(distances, math.Round(distance))
 		}
 	}
@@ -85,39 +138,43 @@ func createPointFromFix(point Point) Point {
 	return createPoint(point.Fx, point.Fy, point.Radius)
 }
 
-func getShortestPath(points []Point, esIndex int, goalLine bool, zone int) (float64, []LatLng) {
+func getShortestPath(points []Point, esIndex int, goalLine bool, zone int) (float64, []string, []types.LatLng) {
 	const tolerance = 1.0
 	lastDistance := float64(INT_MAX)
 	finished := false
 	count := len(points)
 	opsCount := count * 10
-	var goalline []LatLng
+	var goalline []types.LatLng
+	var directions []string
+	var distance float64
 	for !finished && opsCount > 0 {
 		opsCount--
-		distance, line := optimizePath(points, count, esIndex, goalLine, zone)
+		distance, directions, goalline = optimizePath(points, esIndex, goalLine, zone)
 		finished = lastDistance-distance < tolerance
 		lastDistance = distance
-		if line != nil {
-			goalline = line
-		}
 	}
-	return lastDistance, goalline
+	return lastDistance, directions, goalline
 }
 
-func optimizePath(points []Point, count int, esIndex int, goalLine bool, zone int) (float64, []LatLng) {
+func optimizePath(points []Point, esIndex int, goalLine bool, zone int) (float64, []string, []types.LatLng) {
 	distance := 0.0
-	var line []LatLng
+	directions := []string{"exit"}
+
+	var goalline []types.LatLng
+	var count = len(points)
 	for index := 1; index < count; index++ {
 		c, a, b := getTargetPoints(points, count, index, esIndex)
 		if index == count-1 && goalLine {
-			line = processLine(c, a, zone)
+			goalline = processLine(c, a, zone)
+			directions = append(directions, "enter")
 		} else {
-			processCylinder(c, a, b)
+			direction := processCylinder(c, a, b)
+			directions = append(directions, direction)
 		}
 		legDistance := math.Hypot(a.X-c.Fx, a.Y-c.Fy)
 		distance += legDistance
 	}
-	return distance, line
+	return distance, directions, goalline
 }
 
 func getTargetPoints(points []Point, count int, index int, esIndex int) (*Point, Point, Point) {
@@ -132,16 +189,17 @@ func getTargetPoints(points []Point, count int, index int, esIndex int) (*Point,
 	return c, a, b
 }
 
-func processCylinder(c *Point, a, b Point) {
+func processCylinder(c *Point, a Point, b Point) string {
 	distAC, distBC, distAB, distCtoAB := getRelativeDistances(c, a, b)
-
+	var direction = "enter"
 	if distAB == 0.0 {
 		projectOnCircle(c, a.X, a.Y, distAC)
 	} else if pointOnCircle(c, a, b, distAC, distBC, distAB, distCtoAB) {
-		return
+		return direction
 	} else if distCtoAB < c.Radius {
 		if distAC < c.Radius && distBC < c.Radius {
 			setReflection(c, a, b)
+			direction = "exit"
 		} else if (distAC < c.Radius && distBC > c.Radius) || (distAC > c.Radius && distBC < c.Radius) {
 			setIntersection1(c, a, b, distAB)
 		} else if distAC > c.Radius && distBC > c.Radius {
@@ -150,6 +208,7 @@ func processCylinder(c *Point, a, b Point) {
 	} else {
 		setReflection(c, a, b)
 	}
+	return direction
 }
 
 func getRelativeDistances(c *Point, a, b Point) (float64, float64, float64, float64) {
@@ -259,12 +318,12 @@ func setReflection(c *Point, a, b Point) {
 	projectOnCircle(c, kx, ky, kc)
 }
 
-func processLine(c *Point, a Point, zone int) []LatLng {
+func processLine(c *Point, a Point, zone int) []types.LatLng {
 	prevCoords, _ := utm2degress(c.X, c.Y, zone)
 	goalCoords, _ := utm2degress(a.X, a.Y, zone)
 
-	goal := LatLng{Lat: goalCoords[1], Lon: goalCoords[0]}
-	prev := LatLng{Lat: prevCoords[1], Lon: prevCoords[0]}
+	goal := types.LatLng{Lat: goalCoords[1], Lon: goalCoords[0]}
+	prev := types.LatLng{Lat: prevCoords[1], Lon: prevCoords[0]}
 
 	lastLegHeading := computeHeading(goal, prev)
 	if lastLegHeading < 0 {
@@ -301,7 +360,7 @@ func processLine(c *Point, a Point, zone int) []LatLng {
 			c.Fy = t*(g2.Y-g1.Y) + g1.Y
 		}
 	}
-	return []LatLng{firstPoint, secondPoint}
+	return []types.LatLng{firstPoint, secondPoint}
 }
 
 func getUtmZoneFromPosition(lon, lat float64) int {
@@ -343,17 +402,17 @@ func getProjStr(zone int) string {
 	return fmt.Sprintf("+proj=utm +zone=%d +ellps=WGS84 +datum=WGS84 +no_defs", zone)
 }
 
-func computeHeading(latLng1, latLng2 LatLng) float64 {
+func computeHeading(latLng1, latLng2 types.LatLng) float64 {
 	r := geod.Inverse(latLng1.Lat, latLng1.Lon, latLng2.Lat, latLng2.Lon)
 	return r.Azi1
 }
 
-func computeOffset(latLng LatLng, radius, heading float64) LatLng {
+func computeOffset(latLng types.LatLng, radius, heading float64) types.LatLng {
 	r := geod.Direct(latLng.Lat, latLng.Lon, heading, radius)
-	return LatLng{Lat: r.Lat2, Lon: r.Lon2}
+	return types.LatLng{Lat: r.Lat2, Lon: r.Lon2}
 }
 
-func computeDistanceBetweenLatLng(wpt1, wpt2 LatLng) float64 {
+func computeDistanceBetweentLatLng(wpt1, wpt2 types.LatLng) float64 {
 	r := geod.Inverse(wpt1.Lat, wpt1.Lon, wpt2.Lat, wpt2.Lon)
 	return r.S12
 }
@@ -365,14 +424,14 @@ func createCircle(lon, lat, radius float64) *geojson.Feature {
 		angle := float64(i) / float64(steps) * 2 * math.Pi
 		dx := radius * math.Cos(angle)
 		dy := radius * math.Sin(angle)
-		point := computeOffset(LatLng{Lat: lat, Lon: lon}, dx, 90)
+		point := computeOffset(types.LatLng{Lat: lat, Lon: lon}, dx, 90)
 		point = computeOffset(point, dy, 0)
 		coordinates[i] = []float64{point.Lon, point.Lat}
 	}
 	return geojson.NewPolygonFeature([][][]float64{coordinates})
 }
 
-func createCylinders(waypoints []Waypoint, goalLine []LatLng) []*geojson.Feature {
+func createCylinders(waypoints []types.Waypoint, goalLine []types.LatLng) []*geojson.Feature {
 	features := make([]*geojson.Feature, len(waypoints))
 	for i, waypoint := range waypoints {
 		if len(goalLine) > 0 && i == len(waypoints)-1 {
@@ -388,64 +447,10 @@ func createCylinders(waypoints []Waypoint, goalLine []LatLng) []*geojson.Feature
 	return features
 }
 
-func createLine(waypoints []LatLng) *geojson.Feature {
+func createLine(waypoints []types.Waypoint) *geojson.Feature {
 	line := make([][]float64, len(waypoints))
 	for i, wp := range waypoints {
-		line[i] = []float64{wp.Lon, wp.Lat}
+		line[i] = []float64{wp.LatLng.Lon, wp.LatLng.Lat}
 	}
 	return geojson.NewLineStringFeature(line)
-}
-
-func processTask(turnpoints []Waypoint, goalType string, makeGeojson bool) (Result, error) {
-	var waypoints []LatLng
-
-	zone := 33 // just default if not valid turnpoits yet
-	if len(turnpoints) > 0 {
-		zone = getUtmZoneFromPosition(turnpoints[0].LatLng.Lon, turnpoints[0].LatLng.Lat)
-	}
-
-	es := len(turnpoints) - 2
-	for i, tp := range turnpoints {
-		if tp.Type == "ess" {
-			es = i
-		}
-	}
-
-	points := make([]Point, len(turnpoints))
-	for i, tp := range turnpoints {
-		p, err := degrees2utm(tp.LatLng.Lon, tp.LatLng.Lat, zone)
-
-		if err != nil {
-			return Result{}, err
-		}
-		points[i] = createPoint(p[0], p[1], tp.Radius)
-	}
-
-	distance, goalline := getShortestPath(points, es, goalType == "line", zone)
-	for i := range points {
-		fl, err := utm2degress(points[i].Fx, points[i].Fy, zone)
-		if err != nil {
-			return Result{}, err
-		}
-		waypoints = append(waypoints, LatLng{Lat: fl[1], Lon: fl[0]})
-	}
-	distances := recalcDistance(waypoints)
-
-	var featureCollection *geojson.FeatureCollection
-	if makeGeojson {
-		featureCollection = geojson.NewFeatureCollection()
-		line := createLine(waypoints)
-		featureCollection.AddFeature(line)
-		cylinders := createCylinders(turnpoints, goalline)
-		for _, cylinder := range cylinders {
-			featureCollection.AddFeature(cylinder)
-		}
-	}
-
-	return Result{
-		GeoJSON:   featureCollection,
-		Distance:  distance,
-		Distances: distances,
-		Waypoints: waypoints,
-	}, nil
 }
