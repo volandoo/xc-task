@@ -1,6 +1,7 @@
 package traveler
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/kwahome/go-haversine/pkg/haversine"
@@ -20,10 +21,10 @@ type TravelWaypoint struct {
 
 // CurrentStep holds the current state of the task completion process
 type CurrentStep struct {
-	Visited    int                  `json:"visited"`    // Number of waypoints successfully completed
-	Inside     bool                 `json:"inside"`     // Whether currently inside a waypoint
-	TrackIndex int                  `json:"trackIndex"` // Current position in GPS track
-	Waypoints  [][]types.TrackPoint `json:"waypoints"`  // Track points where waypoints were entered
+	VisitedCount int                  `json:"visitedCount"` // Number of waypoints successfully completed
+	IsInsideNext bool                 `json:"isInsideNext"` // Whether currently inside a waypoint
+	TrackIndex   int                  `json:"trackIndex"`   // Current position in GPS track
+	Waypoints    [][]types.TrackPoint `json:"waypoints"`    // Track points where waypoints were entered
 }
 
 // TravelTask processes a GPS track against a flight task to determine completion progress
@@ -41,12 +42,21 @@ func TravelTask(task types.Task, track []types.TrackPoint, step *CurrentStep) *C
 		return step
 	}
 
+	sssIndex := 1
+	for i, wpt := range task.Waypoints {
+		if wpt.Type == "sss" {
+			sssIndex = i
+		}
+	}
+
+	fmt.Println("sssIndex", sssIndex)
+
 	// STEP 1: Find starting point - first track point inside the first waypoint
-	if step.Visited == 0 {
+	if step.VisitedCount == 0 {
 		for i := range track {
 			if isInside(track[i], task.Waypoints[0]) {
-				step.Visited = 1                                               // Mark first waypoint as visited
-				step.Inside = isInside(track[i], task.Waypoints[1])            // Set state to outside waypoint since its the first waypoint
+				step.VisitedCount = 1                                          // Mark first waypoint as visited
+				step.IsInsideNext = isInside(track[i], task.Waypoints[1])      // Set state to outside waypoint since its the first waypoint
 				step.TrackIndex = i                                            // Record position in track
 				step.Waypoints[0] = append(step.Waypoints[0], track[i].Copy()) // Store entry point
 				break
@@ -55,41 +65,42 @@ func TravelTask(task types.Task, track []types.TrackPoint, step *CurrentStep) *C
 	}
 
 	// Exit if no valid starting point found
-	if step.Visited == 0 {
+	if step.VisitedCount == 0 {
 		return step
 	}
-
 	// STEP 2: Process remaining track points to complete waypoint sequence
 	for i := step.TrackIndex + 1; i < len(track); i++ {
 		point := track[i]
-		nextWaypoint := task.Waypoints[step.Visited]
+		visited := step.VisitedCount // starts at 1
+		index := visited - 1         // starts at 0
 
 		// Stop if all waypoints have been completed
-		if step.Visited >= len(task.Waypoints) {
+		if step.VisitedCount >= len(task.Waypoints) {
 			break
 		}
 
-		// STEP 2A: Currently inside a waypoint - look for exit to mark as completed
-		if step.Inside {
-			if isOutside(point, nextWaypoint) {
-				step.Waypoints[step.Visited] = append(step.Waypoints[step.Visited], point.Copy()) // Store exit point
-				step.Visited++                                                                    // Mark waypoint as completed
-				step.TrackIndex = i                                                               // Update track position
-				if step.Visited >= len(task.Waypoints) {
+		if step.IsInsideNext {
+			// STEP 2A: Currently inside the next waypoint - look for exit to mark as completed
+			if isOutside(point, task.Waypoints[index+1]) {
+				step.Waypoints[index] = append(step.Waypoints[index], point.Copy()) // Store exit point
+				step.VisitedCount++                                                 // Mark waypoint as completed
+				step.TrackIndex = i
+				if step.VisitedCount >= len(task.Waypoints) {
 					break
 				}
-				step.Inside = isInside(point, task.Waypoints[step.Visited])
+				step.IsInsideNext = isInside(point, task.Waypoints[step.VisitedCount])
+
 			}
 		} else {
-			// STEP 2B: Currently outside - look for entry into next waypoint
-			if isInside(point, nextWaypoint) {
-				step.Waypoints[step.Visited] = append(step.Waypoints[step.Visited], point.Copy()) // Store entry point
-				step.Visited++                                                                    // Mark waypoint as completed
-				step.TrackIndex = i                                                               // Update track position
-				if step.Visited >= len(task.Waypoints) {
+			// STEP 2B: Currently outside the next waypoint - look for entry into next waypoint
+			if isInside(point, task.Waypoints[index+1]) {
+				step.Waypoints[index] = append(step.Waypoints[index], point.Copy()) // Store entry point
+				step.VisitedCount++                                                 // Mark waypoint as completed
+				step.TrackIndex = i
+				if step.VisitedCount >= len(task.Waypoints) {
 					break
 				}
-				step.Inside = isInside(point, task.Waypoints[step.Visited])
+				step.IsInsideNext = isInside(point, task.Waypoints[step.VisitedCount])
 			}
 		}
 	}
