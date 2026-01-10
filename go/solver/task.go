@@ -12,8 +12,8 @@ import (
 
 type Result struct {
 	GeoJSON   *geojson.FeatureCollection `json:"geojson"`
-	Distance  float64                    `json:"distance"`
-	Distances []float64                  `json:"distances"`
+	Distance  int64                      `json:"distance"`
+	Distances []int64                    `json:"distances"`
 	Waypoints []types.Waypoint           `json:"waypoints"`
 }
 
@@ -92,7 +92,7 @@ func SolveTask(turnpoints []types.Waypoint, goalType string, makeGeojson bool) (
 
 	return Result{
 		GeoJSON:   featureCollection,
-		Distance:  distance,
+		Distance:  int64(distance),
 		Distances: distances,
 		Waypoints: waypoints,
 	}, nil
@@ -115,12 +115,12 @@ func getProj(zone int) (*proj.PJ, error) {
 	return utms[zone], nil
 }
 
-func recalcDistance(waypoints []types.Waypoint) []float64 {
-	var distances []float64
+func recalcDistance(waypoints []types.Waypoint) []int64 {
+	var distances []int64
 	if len(waypoints) > 1 {
 		for i := 0; i < len(waypoints)-1; i++ {
 			distance := computeDistanceBetweentLatLng(waypoints[i].LatLng, waypoints[i+1].LatLng)
-			distances = append(distances, math.Round(distance))
+			distances = append(distances, int64(math.Round(distance)))
 		}
 	}
 	return distances
@@ -418,7 +418,7 @@ func computeDistanceBetweentLatLng(wpt1, wpt2 types.LatLng) float64 {
 }
 
 func createCircle(lon, lat, radius float64) *geojson.Feature {
-	steps := 256
+	steps := 100
 	coordinates := make([][]float64, steps+1)
 	for i := 0; i <= steps; i++ {
 		angle := float64(i) / float64(steps) * 2 * math.Pi

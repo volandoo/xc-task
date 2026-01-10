@@ -18,6 +18,11 @@ type Task struct {
 	GoalType   string     `json:"goalType"`
 }
 
+type PilotInfo struct {
+	Name string `json:"name"`
+	Wing string `json:"wing"`
+}
+
 // TrackPoint represents a point in the pilot's track.
 type TrackPoint struct {
 	LatLng LatLng `json:"latLng"`

@@ -46,15 +46,26 @@ export const parseXctsk = function (xctask: string | XCTask): Task {
         return point;
     });
 
-    let startTime = 0;
-    const time = task.sss?.timeGates[0].replace("Z", "");
-    if (time) {
-        const parts = time.split(":");
-        startTime = new Date().setUTCHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]), 0).valueOf();
+    const startTimes = [];
+    for (const time of task.sss.timeGates) {
+        const timeString = time.replace("Z", "");
+        if (timeString) {
+            const parts = time.split(":");
+            startTimes.push(
+                Math.floor(
+                    new Date().setUTCHours(
+                        parseInt(parts[0]),
+                        parseInt(parts[1]),
+                        parseInt(parts[2]), 0
+                    ).valueOf() / 1000
+                )
+
+            );
+        }
     }
     return {
         waypoints,
-        startTime,
+        startTimes,
         goalType: task.goal?.type === "LINE" ? "line" : "cylinder",
     };
 };

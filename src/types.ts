@@ -8,12 +8,17 @@ export type LatLng = {
 export type Waypoint = {
     latLng: LatLng;
     radius: number;
-    type?: "takeoff" | "start" | "ess" | "goal" | "turn";
+    type?: "takeoff" | "start" | "sss" | "ess" | "goal" | "turn";
+};
+
+export type TrackPoint = {
+    latLng: LatLng;
+    time: number; // timestamp in seconds
 };
 
 export type Task = {
     waypoints: Waypoint[];
-    startTime: number; // timestamp utc
+    startTimes: number[]; // timestamp utc
     goalType: "line" | "cylinder";
 };
 

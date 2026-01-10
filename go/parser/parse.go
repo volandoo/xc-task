@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/twpayne/go-igc"
 	"github.com/volandoo/go-xctask/types"
 )
 
@@ -45,6 +44,7 @@ func ParseXctsk(xctskInput string) (types.Task, error) {
 	}
 
 	startTimes := []int64{}
+	now := time.Now().UTC()
 	if xctask.Sss != nil && len(xctask.Sss.TimeGates) > 0 {
 		for _, gate := range xctask.Sss.TimeGates {
 			timeStr := strings.ReplaceAll(gate, "Z", "")
@@ -55,9 +55,8 @@ func ParseXctsk(xctskInput string) (types.Task, error) {
 				second, _ := strconv.Atoi(parts[2])
 
 				// Create a time.Time object for today's date with UTC hours, minutes, seconds
-				now := time.Now().UTC()
 				t := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, 0, time.UTC)
-				startTimes = append(startTimes, t.UnixMilli()) // Convert to milliseconds since epoch
+				startTimes = append(startTimes, t.Unix()) // Convert to seconds since epoch
 			}
 		}
 	}
@@ -72,16 +71,4 @@ func ParseXctsk(xctskInput string) (types.Task, error) {
 		StartTimes: startTimes,
 		GoalType:   goalType,
 	}, nil
-}
-
-func ParseIgc(igcInput string) ([]types.TrackPoint, error) {
-	res, err := igc.Parse(strings.NewReader(igcInput))
-	if err != nil {
-		return []types.TrackPoint{}, err
-	}
-	var track []types.TrackPoint
-	for _, record := range res.BRecords {
-		track = append(track, types.TrackPoint{LatLng: types.LatLng{Lat: record.Lat, Lon: record.Lon}, Time: record.Time.Unix()})
-	}
-	return track, nil
 }
