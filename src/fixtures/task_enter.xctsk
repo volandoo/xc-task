@@ -64,12 +64,12 @@
     "type": "RACE",
     "direction": "EXIT",
     "timeGates": [
-      "13:00:00Z"
+      "09:00:00Z"
     ]
   },
   "goal": {
     "type": "CYLINDER",
-    "deadline": "18:00:00Z"
+    "deadline": "21:00:00Z"
   },
   "earthModel": "WGS84"
 }
