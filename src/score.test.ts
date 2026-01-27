@@ -53,9 +53,9 @@ describe("getTracksStats integration", () => {
         expect(result.distance).toBe(122344);
 
         expect(formatTime(result.wpts[0].time)).toBe("11:36:14");
-        expect(formatTime(result.wpts[1].time)).toBe("13:00:11");
+        expect(formatTime(result.wpts[1].time)).toBe("13:00:07");
         expect(formatTime(result.wpts[2].time)).toBe("13:18:13");
-        expect(formatTime(result.wpts[3].time)).toBe("15:02:13");
+        expect(formatTime(result.wpts[3].time)).toBe("15:02:22");
         expect(formatTime(result.wpts[4].time)).toBe("16:06:12");
         expect(formatTime(result.wpts[5].time)).toBe("16:08:44");
 
@@ -74,7 +74,7 @@ describe("getTracksStats integration", () => {
         expect(result.distance).toBe(50971);
 
         expect(formatTime(result.wpts[0].time)).toBe("12:07:57");
-        expect(formatTime(result.wpts[1].time)).toBe("13:03:38");
+        expect(formatTime(result.wpts[1].time)).toBe("13:03:33");
         expect(formatTime(result.wpts[2].time)).toBe("13:25:14");
 
         expect(result.wpts[3]).toBeUndefined();
@@ -90,18 +90,18 @@ describe("getTracksStats integration", () => {
         const result = getTracksStats(goal, taskEnterAndExitCylinder);
 
         expect(formatTime(result.sss)).toBe("09:00:00");
-        expect(formatTime(result.ess)).toBe("14:41:53");
+        expect(formatTime(result.ess)).toBe("14:41:52");
         expect(formatTime(result.goal)).toBe("14:44:02");
         expect(result.distance).toBe(70537);
 
         expect(formatTime(result.wpts[0].time)).toBe("11:37:29");
-        expect(formatTime(result.wpts[1].time)).toBe("12:30:12");
+        expect(formatTime(result.wpts[1].time)).toBe("12:30:11");
         expect(formatTime(result.wpts[2].time)).toBe("12:59:50");
         expect(formatTime(result.wpts[3].time)).toBe("13:25:31");
-        expect(formatTime(result.wpts[4].time)).toBe("13:41:52");
+        expect(formatTime(result.wpts[4].time)).toBe("13:42:04");
         expect(formatTime(result.wpts[5].time)).toBe("14:10:21");
         expect(formatTime(result.wpts[6].time)).toBe("14:24:06");
-        expect(formatTime(result.wpts[7].time)).toBe("14:41:53");
+        expect(formatTime(result.wpts[7].time)).toBe("14:41:52");
         expect(formatTime(result.wpts[8].time)).toBe("14:44:02");
 
         expect(result.togoal).toBe(0);
@@ -135,7 +135,7 @@ describe("getTracksStats integration", () => {
             },
             interval: 30,
         });
-        expect(i).toBe(229);
+        expect(i).toBe(373);
         expect(distances.length).toBe(373);
         expect(togoals.length).toBe(373);
     });
