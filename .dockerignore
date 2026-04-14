@@ -1,0 +1,7 @@
+.git
+.github
+node_modules
+dist
+tools/gap-scoring/node_modules
+tools/gap-scoring/.next
+npm-debug.log
