@@ -73,10 +73,27 @@ export function scoreTrackWithLC(
     progressInterval: number = 5,
 ): { score: ScoreResult; snapshots: LCSnapshot[] } {
     const snapshots: LCSnapshot[] = [];
+    let started = false;
+
+    const addSSSStartSnapshot = (sssCrossing: number) => {
+        if (started || sssCrossing <= 0) {
+            return;
+        }
+        snapshots.push({
+            time: sssCrossing,
+            distance: 0,
+            toESS: essDistance,
+        });
+        started = true;
+    };
 
     const score = getTracksStats(track, task, {
         interval: progressInterval,
         callback: (step) => {
+            if (step.sssCrossing <= 0) {
+                return;
+            }
+            addSSSStartSnapshot(step.sssCrossing);
             const toESS = Math.max(0, step.togoal - goalLegDistance);
             snapshots.push({
                 time: step.tsSeconds,
@@ -86,13 +103,19 @@ export function scoreTrackWithLC(
         },
     });
 
-    // Add final point
-    const finalToESS = Math.max(0, score.togoal - goalLegDistance);
-    snapshots.push({
-        time: score.tsSeconds,
-        distance: score.distance,
-        toESS: finalToESS,
-    });
+    // Add final point for pilots who actually started the speed section.
+    if (score.sssCrossing > 0) {
+        addSSSStartSnapshot(score.sssCrossing);
+        const finalToESS = Math.max(0, score.togoal - goalLegDistance);
+        const last = snapshots[snapshots.length - 1];
+        if (!last || last.time !== score.tsSeconds || last.distance !== score.distance || last.toESS !== finalToESS) {
+            snapshots.push({
+                time: score.tsSeconds,
+                distance: score.distance,
+                toESS: finalToESS,
+            });
+        }
+    }
 
     return { score, snapshots };
 }
