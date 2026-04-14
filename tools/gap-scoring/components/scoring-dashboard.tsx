@@ -435,17 +435,6 @@ export function ScoringDashboard() {
               </HelperText>
             </div>
 
-            <Button
-              type="submit"
-              color="warning"
-              className="w-full"
-              disabled={isSubmitting}
-            >
-              <span className="inline-flex items-center gap-2">
-                {isSubmitting ? <Spinner size="sm" /> : null}
-                {isSubmitting ? "Scoring archive" : "Score archive"}
-              </span>
-            </Button>
 
             <Button
               type="button"
@@ -454,6 +443,17 @@ export function ScoringDashboard() {
               onClick={() => setShowAdvanced(true)}
             >
               Advanced
+            </Button>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting}
+            >
+              <span className="inline-flex items-center gap-2">
+                {isSubmitting ? <Spinner size="sm" /> : null}
+                {isSubmitting ? "Scoring archive" : "Score archive"}
+              </span>
             </Button>
           </form>
         </Card>
