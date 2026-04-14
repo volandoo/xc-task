@@ -6,6 +6,7 @@ export type ScoreResult = {
     elapsed: number;
     ess: number;
     sss: number;
+    sssCrossing: number;
     goal: number;
     speed: number;
     distance: number;
@@ -100,6 +101,7 @@ const calculateScore = ({ track, task, step, essIndex, sssIndex, taskResult, tog
         elapsed: 0,
         ess: -1,
         sss: -1,
+        sssCrossing: -1,
         goal: -1,
         speed: 0,
         wpts: [],
@@ -124,9 +126,12 @@ const calculateScore = ({ track, task, step, essIndex, sssIndex, taskResult, tog
 
     // Calculate SSS time
     result.wpts = step.waypoints;
+    if (step.waypoints.length > sssIndex) {
+        result.sssCrossing = step.waypoints[sssIndex].time;
+    }
     let startTime = task.startTimes[0];
     if (task.startTimes.length > 1 && step.waypoints.length > sssIndex) {
-        // Find the earliest start time that the pilot passed after
+        // Find the latest gate time that the pilot passed after.
         for (const time of task.startTimes) {
             if (step.waypoints[sssIndex].time > time) {
                 startTime = time;

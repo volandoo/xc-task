@@ -35,7 +35,7 @@ export const parseXctsk = function (xctask: string | XCTask): Task {
                 t.type === "TAKEOFF" || i === 0
                     ? "takeoff"
                     : t.type === "SSS" || i === 1
-                        ? "start"
+                        ? "sss"
                         : t.type === "ESS" || ess
                             ? "ess"
                             : t.type === "GOAL" || goal
@@ -65,8 +65,7 @@ export const parseXctsk = function (xctask: string | XCTask): Task {
     }
     return {
         waypoints,
-        startTimes,
+        startTimes: startTimes.sort((a, b) => a - b),
         goalType: task.goal?.type === "LINE" ? "line" : "cylinder",
     };
 };
-
