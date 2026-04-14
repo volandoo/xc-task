@@ -58,12 +58,6 @@ export function getTracksStats(track: TrackPoint[], task: Task, onProgress?: {
         track,
         step: undefined,
         onProgress: onProgress ? (step: CurrentStep) => {
-
-            // Don't track distances before SSS
-            if (step.trackIndex < sssIndex) {
-                return;
-            }
-
             const res = calculateScore({
                 togoal: progress.length > 0 ? progress[progress.length - 1].togoal : Number.MAX_VALUE,
                 track, task, step, essIndex, sssIndex, taskResult
@@ -128,17 +122,15 @@ const calculateScore = ({ track, task, step, essIndex, sssIndex, taskResult, tog
     result.wpts = step.waypoints;
     if (step.waypoints.length > sssIndex) {
         result.sssCrossing = step.waypoints[sssIndex].time;
-    }
-    let startTime = task.startTimes[0];
-    if (task.startTimes.length > 1 && step.waypoints.length > sssIndex) {
-        // Find the latest gate time that the pilot passed after.
-        for (const time of task.startTimes) {
-            if (step.waypoints[sssIndex].time > time) {
-                startTime = time;
+        let startTime = task.startTimes[0];
+        if (task.startTimes.length > 1) {
+            // Find the latest gate time that the pilot passed after.
+            for (const time of task.startTimes) {
+                if (step.waypoints[sssIndex].time > time) {
+                    startTime = time;
+                }
             }
         }
-        result.sss = startTime;
-    } else {
         result.sss = startTime;
     }
 

@@ -85,6 +85,21 @@ describe("getTracksStats integration", () => {
         expect(result.wpts.length).toBe(3);
     });
 
+    it("does not assign a start time to pilots who never cross SSS", () => {
+        const takeoff = taskEnterCylinderOnly.waypoints[0].latLng;
+        const now = Math.floor(Date.now() / 1000);
+        const localTrack = [0, 1, 2].map((offset) => ({
+            latLng: takeoff,
+            time: now + offset * 60,
+        }));
+
+        const result = getTracksStats(localTrack, taskEnterCylinderOnly);
+
+        expect(result.sssCrossing).toBe(-1);
+        expect(result.sss).toBe(-1);
+        expect(result.elapsed).toBe(0);
+    });
+
     it("scores goal_exit.json track against task_exit.xctsk", () => {
         const goal = parseFile("goal_exit.json");
         const result = getTracksStats(goal, taskEnterAndExitCylinder);
