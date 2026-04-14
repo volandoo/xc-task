@@ -16,7 +16,7 @@
     "next": "16.2.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "xc-task": "file:../.."
+    "xc-task": "^1.0.35"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

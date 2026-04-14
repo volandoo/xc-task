@@ -16,11 +16,10 @@ import {
     selectLCType,
 } from "./leadingCoeff";
 import {
-    DEFAULT_HG_FORMULA,
-    DEFAULT_PG_FORMULA,
     type AircraftClass,
     type FormulaConfig,
     type GapResult,
+    normalizeFormulaConfig,
     type PilotResult,
 } from "./types";
 
@@ -170,14 +169,7 @@ function createFormula(
     modality: AircraftClass,
     formulaOverrides?: Partial<FormulaConfig>,
 ): FormulaConfig {
-    const defaults = modality === "HG"
-        ? { ...DEFAULT_HG_FORMULA }
-        : { ...DEFAULT_PG_FORMULA };
-
-    return {
-        ...defaults,
-        ...(formulaOverrides ?? {}),
-    };
+    return normalizeFormulaConfig(modality, formulaOverrides);
 }
 
 function formatCoordinates(lat: number, lon: number): string {

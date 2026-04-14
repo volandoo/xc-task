@@ -24,9 +24,9 @@ import {
   TextInput,
 } from "flowbite-react";
 import {
-  DEFAULT_HG_FORMULA,
-  DEFAULT_PG_FORMULA,
   type FormulaConfig,
+  getDefaultFormulaConfig,
+  normalizeFormulaConfig,
 } from "@/lib/scoring/types";
 
 type ScoreResponse = {
@@ -95,6 +95,7 @@ type ScoreResponse = {
 };
 
 const FORMULA_STORAGE_KEY = "gap-scoring-formula-overrides-v1";
+type FormulaStorageMap = Record<string, FormulaConfig>;
 
 type SelectFieldOption = {
   label: string;
@@ -105,72 +106,77 @@ type FormulaField = {
   key: keyof FormulaConfig;
   label: string;
   type: "number" | "select";
+  description: string;
   step?: string;
   min?: number;
   options?: SelectFieldOption[];
+  modalities?: Array<"PG" | "HG">;
 };
 
 const FORMULA_FIELDS: FormulaField[] = [
   {
-    key: "class",
-    label: "Formula class",
-    type: "select",
-    options: [
-      { label: "GAP", value: "gap" },
-      { label: "PWC", value: "pwc" },
-      { label: "OZGAP", value: "ozgap" },
-      { label: "GGAP", value: "ggap" },
-    ],
+    key: "nominalLaunch",
+    label: "Nominal launch ratio",
+    type: "number",
+    description: "Fraction of registered pilots expected to launch. Example: 0.96 means 96%.",
+    step: "0.01",
+    min: 0,
   },
-  { key: "version", label: "Version", type: "number", step: "1", min: 0 },
   {
-    key: "aircraftClass",
-    label: "Aircraft class",
-    type: "select",
-    options: [
-      { label: "PG", value: "PG" },
-      { label: "HG", value: "HG" },
-    ],
+    key: "nominalDistance",
+    label: "Nominal distance (m)",
+    type: "number",
+    description: "Reference task distance used in day-quality calculations.",
+    step: "1",
+    min: 0,
   },
-  { key: "nominalLaunch", label: "Nominal launch", type: "number", step: "0.01", min: 0 },
-  { key: "nominalDistance", label: "Nominal distance (m)", type: "number", step: "1", min: 0 },
-  { key: "nominalTime", label: "Nominal time (s)", type: "number", step: "1", min: 0 },
-  { key: "nominalGoal", label: "Nominal goal", type: "number", step: "0.01", min: 0 },
-  { key: "minDist", label: "Minimum distance (m)", type: "number", step: "1", min: 0 },
-  { key: "leadingTimeRatio", label: "Leading time ratio", type: "number", step: "0.001", min: 0 },
+  {
+    key: "nominalTime",
+    label: "Nominal time (s)",
+    type: "number",
+    description: "Reference winning time used for time validity.",
+    step: "1",
+    min: 0,
+  },
+  {
+    key: "nominalGoal",
+    label: "Nominal goal ratio",
+    type: "number",
+    description: "Fraction of launched pilots expected to reach goal. Example: 0.30 means 30%.",
+    step: "0.01",
+    min: 0,
+  },
+  {
+    key: "minDist",
+    label: "Minimum distance (m)",
+    type: "number",
+    description: "Minimum scored distance awarded to launched pilots.",
+    step: "1",
+    min: 0,
+  },
+  {
+    key: "leadingTimeRatio",
+    label: "Leading time ratio",
+    type: "number",
+    description: "Fraction of non-distance points reserved for leading. Example: 0.175 means 17.5%.",
+    step: "0.001",
+    min: 0,
+  },
   {
     key: "weightDist",
-    label: "Distance weight",
+    label: "Distance weight curve",
     type: "select",
+    description: "Curve used to split available points between distance and non-distance points.",
     options: [
       { label: "Pre-2014", value: "pre2014" },
       { label: "Post-2014", value: "post2014" },
-    ],
-  },
-  { key: "linearDist", label: "Linear distance fraction", type: "number", step: "0.01", min: 0 },
-  {
-    key: "diffCalc",
-    label: "Difficulty calculation",
-    type: "select",
-    options: [
-      { label: "Landed out only", value: "lo" },
-      { label: "All", value: "all" },
-    ],
-  },
-  { key: "diffDist", label: "Difficulty lookahead", type: "number", step: "1", min: 0 },
-  {
-    key: "diffRamp",
-    label: "Difficulty ramp",
-    type: "select",
-    options: [
-      { label: "Fixed", value: "fixed" },
-      { label: "Flexible", value: "flexible" },
     ],
   },
   {
     key: "speedCalc",
     label: "Speed calculation",
     type: "select",
+    description: "Curve used to award speed points relative to the fastest pilot.",
     options: [
       { label: "Normal", value: "normal" },
       { label: "Extended", value: "extended" },
@@ -180,28 +186,28 @@ const FORMULA_FIELDS: FormulaField[] = [
     key: "arrival",
     label: "Arrival scoring",
     type: "select",
+    description: "HG only. Place scores ESS order; timed scores ESS arrival gaps.",
+    modalities: ["HG"],
     options: [
       { label: "Off", value: "off" },
       { label: "Place", value: "place" },
       { label: "Timed", value: "timed" },
     ],
   },
-  {
-    key: "departure",
-    label: "Departure scoring",
-    type: "select",
-    options: [
-      { label: "Leadout", value: "leadout" },
-      { label: "Off", value: "off" },
-    ],
-  },
 ];
 
 function getDefaultFormula(modality: "PG" | "HG"): FormulaConfig {
-  return modality === "HG" ? { ...DEFAULT_HG_FORMULA } : { ...DEFAULT_PG_FORMULA };
+  return getDefaultFormulaConfig(modality);
 }
 
-function loadStoredFormulaMap(): Partial<Record<"PG" | "HG", FormulaConfig>> {
+function normalizeFormula(
+  formula: FormulaConfig,
+  modality: "PG" | "HG",
+): FormulaConfig {
+  return normalizeFormulaConfig(modality, formula);
+}
+
+function loadStoredFormulaMap(): FormulaStorageMap {
   if (typeof window === "undefined") {
     return {};
   }
@@ -212,18 +218,29 @@ function loadStoredFormulaMap(): Partial<Record<"PG" | "HG", FormulaConfig>> {
       return {};
     }
 
-    return JSON.parse(stored) as Partial<Record<"PG" | "HG", FormulaConfig>>;
+    return JSON.parse(stored) as FormulaStorageMap;
   } catch {
     return {};
   }
 }
 
-function saveStoredFormulaMap(value: Partial<Record<"PG" | "HG", FormulaConfig>>) {
+function saveStoredFormulaMap(value: FormulaStorageMap) {
   if (typeof window === "undefined") {
     return;
   }
 
   window.localStorage.setItem(FORMULA_STORAGE_KEY, JSON.stringify(value));
+}
+
+function loadFormulaDraft(modality: "PG" | "HG"): FormulaConfig {
+  const storedMap = loadStoredFormulaMap();
+  const storedFormula = storedMap[modality];
+
+  if (!storedFormula) {
+    return getDefaultFormula(modality);
+  }
+
+  return normalizeFormula(storedFormula, modality);
 }
 
 function formatClockTime(unixSeconds: number): string {
@@ -251,6 +268,25 @@ function formatDistance(meters: number): string {
 
 function formatScore(value: number): string {
   return value.toFixed(1);
+}
+
+function formatPercent(ratio: number): string {
+  return `${(ratio * 100).toFixed(1).replace(/\.0$/, "")}%`;
+}
+
+function getFormulaFieldNote(field: FormulaField, formula: FormulaConfig): string | null {
+  switch (field.key) {
+    case "nominalLaunch":
+      return `Current value: ${formatPercent(formula.nominalLaunch)}`;
+    case "nominalTime":
+      return `Current value: ${formatDuration(formula.nominalTime)}`;
+    case "nominalGoal":
+      return `Current value: ${formatPercent(formula.nominalGoal)}`;
+    case "leadingTimeRatio":
+      return `Current value: ${formatPercent(formula.leadingTimeRatio)}`;
+    default:
+      return null;
+  }
 }
 
 function formatMetaValue(param: string, value: string | number | boolean): string {
@@ -303,16 +339,19 @@ export function ScoringDashboard() {
     ];
   }, [result]);
 
-  useEffect(() => {
-    const storedMap = loadStoredFormulaMap();
-    setFormulaDraft(storedMap[modality] ?? getDefaultFormula(modality));
-  }, [modality]);
+  const visibleFormulaFields = useMemo(
+    () =>
+      FORMULA_FIELDS.filter(
+        (field) => !field.modalities || field.modalities.includes(modality),
+      ),
+    [modality],
+  );
 
   useEffect(() => {
     const storedMap = loadStoredFormulaMap();
     saveStoredFormulaMap({
       ...storedMap,
-      [modality]: formulaDraft,
+      [modality]: normalizeFormula(formulaDraft, modality),
     });
   }, [formulaDraft, modality]);
 
@@ -321,6 +360,11 @@ export function ScoringDashboard() {
       ...current,
       [key]: value,
     }));
+  }
+
+  function handleModalityChange(nextModality: "PG" | "HG") {
+    setModality(nextModality);
+    setFormulaDraft(loadFormulaDraft(nextModality));
   }
 
   function handleResetFormula() {
@@ -413,7 +457,7 @@ export function ScoringDashboard() {
               <Select
                 id="modality"
                 value={modality}
-                onChange={(event) => setModality(event.target.value === "HG" ? "HG" : "PG")}
+                onChange={(event) => handleModalityChange(event.target.value === "HG" ? "HG" : "PG")}
               >
                 <option value="PG">Paragliding (PG)</option>
                 <option value="HG">Hang gliding (HG)</option>
@@ -491,7 +535,7 @@ export function ScoringDashboard() {
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-lg font-semibold text-slate-950">Task summary</h2>
                   <Badge color={result.modality === "HG" ? "purple" : "warning"}>
-                    {result.modality}
+                    {result.modality} · GAP {result.result.formula.version}
                   </Badge>
                 </div>
                 <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
@@ -695,8 +739,13 @@ export function ScoringDashboard() {
       <Modal show={showAdvanced} size="4xl" dismissible onClose={() => setShowAdvanced(false)}>
         <ModalHeader>Advanced GAP Parameters</ModalHeader>
         <ModalBody>
+          <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+            Editing <span className="font-medium">{modality}</span> defaults for <span className="font-medium">GAP 2025</span>.
+            Formula class, version, aircraft class, difficulty settings, and departure scoring are fixed here so the
+            controls below match the scorer that actually runs.
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {FORMULA_FIELDS.map((field) => (
+            {visibleFormulaFields.map((field) => (
               <div key={field.key} className="space-y-2">
                 <Label htmlFor={`formula-${field.key}`}>{field.label}</Label>
                 {field.type === "select" ? (
@@ -731,6 +780,10 @@ export function ScoringDashboard() {
                     }
                   />
                 )}
+                <HelperText>
+                  {field.description}
+                  {getFormulaFieldNote(field, formulaDraft) ? ` ${getFormulaFieldNote(field, formulaDraft)}` : ""}
+                </HelperText>
               </div>
             ))}
           </div>

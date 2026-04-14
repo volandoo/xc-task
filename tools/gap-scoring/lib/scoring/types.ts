@@ -19,7 +19,7 @@ export type FormulaConfig = {
     nominalLaunch: number;   // e.g. 0.96
     nominalDistance: number;  // meters, e.g. 30000
     nominalTime: number;     // seconds, e.g. 5400 (1.5h)
-    nominalGoal: number;     // percentage, e.g. 20
+    nominalGoal: number;     // fraction, e.g. 0.30 = 30%
 
     // Minimum distance (meters) — pilots below this get this distance
     minDist: number;         // e.g. 5000
@@ -127,44 +127,82 @@ export type GapResult = {
     scores: PilotScore[];
 };
 
-/** Default GAP formula for PG competitions */
-export const DEFAULT_PG_FORMULA: FormulaConfig = {
-    class: "gap",
-    version: 2025,
-    aircraftClass: "PG",
-    nominalLaunch: 0.96,   // GAP 2025: fixed at 96%
-    nominalDistance: 30000,
-    nominalTime: 5400,
-    nominalGoal: 30,       // GAP 2025: fixed at 30%
-    minDist: 5000,
-    leadingTimeRatio: 0.26, // GAP 2025 PG default: 26%
-    weightDist: "post2014",
-    linearDist: 0.5,
-    diffCalc: "lo",
-    diffDist: 5,
-    diffRamp: "flexible",
-    speedCalc: "normal",
-    arrival: "off",         // GAP 2025 PG: no arrival points
-    departure: "leadout",
+const DEFAULT_FORMULAS: Record<AircraftClass, FormulaConfig> = {
+    PG: {
+        class: "gap",
+        version: 2025,
+        aircraftClass: "PG",
+        nominalLaunch: 0.96,    // GAP 2025: fixed at 96%
+        nominalDistance: 30000,
+        nominalTime: 5400,
+        nominalGoal: 0.3,       // GAP 2025: fixed at 30%
+        minDist: 5000,
+        leadingTimeRatio: 0.26, // GAP 2025 PG default: 26%
+        weightDist: "post2014",
+        linearDist: 0.5,
+        diffCalc: "lo",
+        diffDist: 5,
+        diffRamp: "flexible",
+        speedCalc: "normal",
+        arrival: "off",
+        departure: "leadout",
+    },
+    HG: {
+        class: "gap",
+        version: 2025,
+        aircraftClass: "HG",
+        nominalLaunch: 0.96,
+        nominalDistance: 30000,
+        nominalTime: 5400,
+        nominalGoal: 0.3,
+        minDist: 5000,
+        leadingTimeRatio: 0.175, // GAP 2025 HG default: 17.5%
+        weightDist: "post2014",
+        linearDist: 0.5,
+        diffCalc: "lo",
+        diffDist: 5,
+        diffRamp: "flexible",
+        speedCalc: "normal",
+        arrival: "place",
+        departure: "leadout",
+    },
 };
 
-/** Default GAP formula for HG competitions */
-export const DEFAULT_HG_FORMULA: FormulaConfig = {
-    class: "gap",
-    version: 2025,
-    aircraftClass: "HG",
-    nominalLaunch: 0.96,
-    nominalDistance: 30000,
-    nominalTime: 5400,
-    nominalGoal: 30,
-    minDist: 5000,
-    leadingTimeRatio: 0.175, // GAP 2025 HG default: 17.5%
-    weightDist: "post2014",
-    linearDist: 0.5,
-    diffCalc: "lo",
-    diffDist: 5,
-    diffRamp: "flexible",
-    speedCalc: "normal",
-    arrival: "place",        // GAP 2025 HG: place-based arrival points
-    departure: "leadout",
-};
+export const DEFAULT_PG_FORMULA = DEFAULT_FORMULAS.PG;
+export const DEFAULT_HG_FORMULA = DEFAULT_FORMULAS.HG;
+
+export function getDefaultFormulaConfig(
+    aircraftClass: AircraftClass,
+): FormulaConfig {
+    return {
+        ...DEFAULT_FORMULAS[aircraftClass],
+    };
+}
+
+export function normalizeFormulaConfig(
+    aircraftClass: AircraftClass,
+    overrides?: Partial<FormulaConfig>,
+): FormulaConfig {
+    const normalizedNominalGoal = typeof overrides?.nominalGoal === "number" && overrides.nominalGoal > 1
+        ? overrides.nominalGoal / 100
+        : overrides?.nominalGoal;
+
+    const merged = {
+        ...getDefaultFormulaConfig(aircraftClass),
+        ...(overrides ?? {}),
+        ...(normalizedNominalGoal === undefined ? {} : { nominalGoal: normalizedNominalGoal }),
+    };
+
+    return {
+        ...merged,
+        class: "gap",
+        version: 2025,
+        aircraftClass,
+        linearDist: 0.5,
+        diffCalc: "lo",
+        diffDist: 5,
+        diffRamp: "flexible",
+        departure: "leadout",
+        arrival: aircraftClass === "PG" ? "off" : merged.arrival,
+    };
+}

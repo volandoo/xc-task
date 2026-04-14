@@ -100,9 +100,9 @@ export function computeDayQuality(
 
     // Distance validity
     let distance: number;
-    const mdist = (formula.nominalGoal / 100) * (totals.maxDist - formula.nominalDistance);
+    const mdist = formula.nominalGoal * (totals.maxDist - formula.nominalDistance);
     const nomDistArea = totals.launched * (
-        (1 + formula.nominalGoal / 100) * (formula.nominalDistance - formula.minDist) +
+        (1 + formula.nominalGoal) * (formula.nominalDistance - formula.minDist) +
         Math.max(0, mdist)
     ) / 2;
 
