@@ -72,6 +72,7 @@ export function travelTask({
     const sssIndex = getSSSIndex(task);
     let wasInsideSSS = false;
     let sssType = "";
+    const useFirstSSSEntryTime = task.useFirstSSSEntryTime === true;
 
 
     if (step.visitedCount < sssIndex + 1) {
@@ -111,6 +112,9 @@ export function travelTask({
                 // Check if this starting point is also inside SSS
                 if (isInsideMixed(track[i], task.waypoints[sssIndex])) {
                     wasInsideSSS = true;
+                    if (useFirstSSSEntryTime && !step.waypoints[sssIndex]?.time) {
+                        step.waypoints[sssIndex] = copyTrackPoint(track[i]);
+                    }
                 }
                 break;
             }
@@ -131,20 +135,27 @@ export function travelTask({
         // Stop tracking SSS once we've visited the waypoint after SSS
         if (step.visitedCount <= sssIndex + 1 && sssType !== "") {
             const isCurrentlyInsideSSS = isInsideMixed(point, task.waypoints[sssIndex]);
+            const hasRecordedSSSTime = Boolean(step.waypoints[sssIndex]?.time);
 
-            switch (sssType) {
-                case "enter":
-                    // For "enter" type: track when pilot enters (outside -> inside)
-                    if (isCurrentlyInsideSSS && !wasInsideSSS) {
-                        step.waypoints[sssIndex] = copyTrackPoint(point); // Store the last entry point
-                    }
-                    break;
-                case "exit":
-                    // For "exit" type: track when pilot exits (inside -> outside)
-                    if (!isCurrentlyInsideSSS && wasInsideSSS) {
-                        step.waypoints[sssIndex] = copyTrackPoint(point); // Store the last exit point
-                    }
-                    break;
+            if (useFirstSSSEntryTime) {
+                if (isCurrentlyInsideSSS && !wasInsideSSS && !hasRecordedSSSTime) {
+                    step.waypoints[sssIndex] = copyTrackPoint(point);
+                }
+            } else {
+                switch (sssType) {
+                    case "enter":
+                        // For "enter" type: track when pilot enters (outside -> inside)
+                        if (isCurrentlyInsideSSS && !wasInsideSSS) {
+                            step.waypoints[sssIndex] = copyTrackPoint(point); // Store the last entry point
+                        }
+                        break;
+                    case "exit":
+                        // For "exit" type: track when pilot exits (inside -> outside)
+                        if (!isCurrentlyInsideSSS && wasInsideSSS) {
+                            step.waypoints[sssIndex] = copyTrackPoint(point); // Store the last exit point
+                        }
+                        break;
+                }
             }
 
             wasInsideSSS = isCurrentlyInsideSSS;

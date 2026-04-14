@@ -20,6 +20,7 @@ export type Task = {
     waypoints: Waypoint[];
     startTimes: number[]; // timestamp utc
     goalType: "line" | "cylinder";
+    useFirstSSSEntryTime?: boolean;
 };
 
 export type Result = {
