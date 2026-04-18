@@ -2,25 +2,15 @@ import IGCParser from "igc-parser";
 import {
     parseXctsk,
     processTask,
-    type ScoreResult,
     type Task,
     type TrackPoint,
     type XCTask,
 } from "xc-task";
-import { scoreTask } from "./gap";
-import {
-    computeESSDistance,
-    computeGoalLegDistance,
-    computeLeadingCoeff,
-    scoreTrackWithLC,
-    selectLCType,
-} from "./leadingCoeff";
+import { scoreTaskInputs, type ScoreResult } from "./scoreTaskInputs";
 import {
     type AircraftClass,
     type FormulaConfig,
     type GapResult,
-    normalizeFormulaConfig,
-    type PilotResult,
 } from "./types";
 
 export type ArchiveFile = {
@@ -79,8 +69,6 @@ export type ScoreArchiveResult = {
     formulaSettings?: MetaRow[];
 };
 
-const DEFAULT_TASK_WINDOW_SECONDS = 2 * 60 * 60;
-
 function toUtcMidnight(unixSeconds: number): number {
     const date = new Date(unixSeconds * 1000);
     return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
@@ -120,56 +108,6 @@ function parseIgcContent(
     }
 
     return { name, track };
-}
-
-function floorToMinuteBoundary(unixSeconds: number, minuteStep: number): number {
-    const step = minuteStep * 60;
-    return Math.floor(unixSeconds / step) * step;
-}
-
-function inferRaceStartGates(
-    declaredStartTimes: number[],
-    pilots: PilotResult[],
-): number[] {
-    const crossings = pilots
-        .map((pilot) => pilot.score.sssCrossing)
-        .filter((time) => time > 0)
-        .sort((a, b) => a - b);
-
-    if (declaredStartTimes.length < 2 || crossings.length === 0) {
-        return declaredStartTimes;
-    }
-
-    const firstCrossing = crossings[0];
-    const filtered = declaredStartTimes
-        .filter((gate) => gate <= firstCrossing + 10 * 60)
-        .filter((gate) => crossings.some((crossing) => crossing >= gate && crossing - gate <= 10 * 60));
-
-    const gates = (filtered.length > 0 ? filtered : [declaredStartTimes[declaredStartTimes.length - 1]])
-        .sort((a, b) => a - b);
-
-    while (true) {
-        const lastGate = gates[gates.length - 1];
-        const laterCrossings = crossings.filter((crossing) => crossing >= lastGate + 15 * 60);
-        if (laterCrossings.length < 2) {
-            break;
-        }
-
-        const inferredGate = floorToMinuteBoundary(laterCrossings[0], 5);
-        if (inferredGate <= lastGate) {
-            break;
-        }
-        gates.push(inferredGate);
-    }
-
-    return gates;
-}
-
-function createFormula(
-    modality: AircraftClass,
-    formulaOverrides?: Partial<FormulaConfig>,
-): FormulaConfig {
-    return normalizeFormulaConfig(modality, formulaOverrides);
 }
 
 function formatCoordinates(lat: number, lon: number): string {
@@ -257,133 +195,48 @@ export function scoreArchive({
     if (igcFiles.length === 0) {
         throw new Error("The archive must contain at least one IGC file.");
     }
-
-    const formula = createFormula(modality, formulaOverrides);
     const rawTask = JSON.parse(taskFile.content) as XCTask;
-    const task = parseXctsk(taskFile.content);
+    const task = parseXctsk(rawTask);
 
     if (task.startTimes.length === 0) {
         throw new Error(`Task file "${taskFile.name}" does not contain any SSS start gates.`);
     }
 
-    let taskStartTime = Math.min(...task.startTimes);
-    const essDistance = computeESSDistance(task);
-    const goalLegDistance = computeGoalLegDistance(task);
-    const lcType = selectLCType(formula);
-
-    const pilotResults: PilotResult[] = igcFiles
+    const taskStartTime = Math.min(...task.startTimes);
+    const scored = scoreTaskInputs({
+        rawTask,
+        task,
+        modality,
+        pilotsPresent,
+        formulaOverrides,
+        pilots: igcFiles
         .slice()
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((igcFile) => {
             const { name, track } = parseIgcContent(igcFile, taskStartTime);
-            const { score, snapshots } = scoreTrackWithLC(track, task, essDistance, goalLegDistance);
-
-            if (score.sss > 0 && score.sss < taskStartTime) {
-                score.sss = taskStartTime;
-            }
-
-            const pilotSSTime = score.sss > 0 ? score.sss : taskStartTime;
-            const leadingCoeff = computeLeadingCoeff(
-                snapshots,
-                essDistance,
-                taskStartTime,
-                taskStartTime + DEFAULT_TASK_WINDOW_SECONDS,
-                pilotSSTime,
-                lcType,
-                formula.aircraftClass,
-            );
-
             return {
                 name,
-                score,
-                leadingCoeff,
-                lcSnapshots: snapshots,
+                track,
+                meta: null,
             };
-        });
-
-    const inferredStartTimes = inferRaceStartGates(task.startTimes, pilotResults);
-    const hasInferredStartGateChanges = inferredStartTimes.length !== task.startTimes.length ||
-        inferredStartTimes.some((time, index) => time !== task.startTimes[index]);
-
-    if (hasInferredStartGateChanges) {
-        task.startTimes = inferredStartTimes;
-        taskStartTime = Math.min(...inferredStartTimes);
-
-        for (const pilot of pilotResults) {
-            const crossing = pilot.score.sssCrossing;
-            if (crossing <= 0) {
-                continue;
-            }
-
-            let scoredStart = inferredStartTimes[0];
-            for (const gate of inferredStartTimes) {
-                if (crossing > gate) {
-                    scoredStart = gate;
-                }
-            }
-
-            pilot.score.sss = scoredStart;
-        }
-    }
-
-    const lastESSTime = pilotResults
-        .map((pilot) => pilot.score.ess)
-        .filter((time) => time > 0)
-        .reduce((max, time) => Math.max(max, time), 0);
-
-    const lastOutlandingTime = pilotResults
-        .filter((pilot) => pilot.score.ess <= 0 && pilot.score.sss > 0)
-        .reduce((max, pilot) => Math.max(max, pilot.score.tsSeconds), 0);
-
-    const taskFinishTime = Math.max(lastOutlandingTime, lastESSTime) || taskStartTime + DEFAULT_TASK_WINDOW_SECONDS;
-
-    for (const pilot of pilotResults) {
-        const pilotSSTime = pilot.score.sss > 0 ? pilot.score.sss : taskStartTime;
-        pilot.leadingCoeff = computeLeadingCoeff(
-            pilot.lcSnapshots,
-            essDistance,
-            taskStartTime,
-            taskFinishTime,
-            pilotSSTime,
-            lcType,
-            formula.aircraftClass,
-        );
-    }
-
-    const result = scoreTask(
-        task as Task,
-        pilotResults,
-        formula,
-        essDistance,
-        taskStartTime,
-        taskFinishTime,
-        pilotsPresent,
-    );
-
-    const taskMetadata: ScoreArchiveResult["task"] = {
-        waypoints: task.waypoints.length,
-        startTimes: task.startTimes,
-        essDistance,
-        goalLegDistance,
-        taskStartTime,
-        taskFinishTime,
-    };
+        }),
+    });
 
     return {
         archive: {
             taskFileName: taskFile.name,
             igcFileNames: igcFiles.map((file) => file.name).sort((a, b) => a.localeCompare(b)),
         },
-        task: taskMetadata,
-        modality,
-        result,
-        pilots: pilotResults.map((pilot) => ({
-            name: pilot.name,
-            score: pilot.score,
-            leadingCoeff: pilot.leadingCoeff,
+        task: scored.taskMetadata,
+        modality: scored.modality,
+        result: scored.result,
+        pilots: scored.pilotEntries.map((entry) => ({
+            name: entry.pilot.name,
+            score: entry.pilot.score,
+            leadingCoeff: entry.pilot.leadingCoeff,
         })),
-        taskDefinition: rawTask.turnpoints?.length ? buildTaskDefinition(rawTask, task) : undefined,
-        taskStatistics: buildTaskStatistics(result, taskMetadata),
-        formulaSettings: buildFormulaSettings(formula),
+        taskDefinition: rawTask.turnpoints?.length ? buildTaskDefinition(rawTask, scored.task) : undefined,
+        taskStatistics: buildTaskStatistics(scored.result, scored.taskMetadata),
+        formulaSettings: buildFormulaSettings(scored.formula),
     };
 }

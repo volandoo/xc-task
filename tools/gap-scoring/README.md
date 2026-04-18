@@ -8,6 +8,63 @@ The app accepts a single `.zip` upload containing:
 
 All scoring happens on the backend in `/api/score`. The UI only uploads the archive, lets the user adjust GAP parameters, and renders results.
 
+## Public JSON API
+
+The app also exposes a public JSON scoring endpoint at `/api/public-score`.
+
+Authentication:
+- Set `GAP_SCORING_PUBLIC_API_KEY` in the server environment.
+- Send the same value in the `x-api-key` request header.
+
+Request body:
+
+```json
+{
+  "task": {
+    "turnpoints": [
+      {
+        "waypoint": {
+          "name": "TO",
+          "description": "Takeoff",
+          "lat": 41.123,
+          "lon": 2.123,
+          "altSmoothed": 1000
+        },
+        "radius": 400,
+        "type": "takeoff"
+      }
+    ],
+    "sss": {
+      "type": "ENTER",
+      "direction": "EXIT",
+      "timeGates": ["13:00"]
+    },
+    "goal": {
+      "type": "CYLINDER"
+    }
+  },
+  "tracks": [
+    {
+      "pilot_name": "Pedro Enrique",
+      "pilot_id": "12345",
+      "points": [
+        { "lat": 41.1, "lon": 2.1, "alt": 950, "time": 1713528000 }
+      ]
+    }
+  ],
+  "modality": "PG",
+  "pilotsPresent": 10,
+  "formulaOverrides": {
+    "nominalDistance": 30000
+  }
+}
+```
+
+Notes:
+- `task` must be raw `XCTask` JSON.
+- Each track point must include `time` as Unix seconds.
+- The response is an array of objects keyed by `pilot_id`.
+
 ## Local Development
 
 Install dependencies in the root package and the app if needed, then run:

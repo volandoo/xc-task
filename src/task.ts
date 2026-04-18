@@ -422,7 +422,7 @@ const createCylinders = (waypoints: Waypoint[], goalLine: LatLng[]): turf.Featur
         const color =
             waypoint.type === "takeoff"
                 ? "#204d74"
-                : waypoint.type === "start"
+                : waypoint.type === "sss"
                     ? "#ac2925"
                     : waypoint.type === "ess"
                         ? "#ac2925"
