@@ -19,6 +19,10 @@ const trackSchema = z.object({
     points: z.array(pointSchema).min(1),
 });
 
+const timeGateSchema = z.string()
+    .trim()
+    .regex(/^\d{2}:\d{2}(?::\d{2})?Z?$/, "Expected HH:MM, HH:MM:SS, HH:MMZ, or HH:MM:SSZ.");
+
 const turnpointSchema = z.object({
     waypoint: z.object({
         name: z.string(),
@@ -32,12 +36,12 @@ const turnpointSchema = z.object({
 });
 
 const taskSchema = z.object({
-    turnpoints: z.array(turnpointSchema).min(2),
+    turnpoints: z.array(turnpointSchema).min(4, "Task must include at least takeoff, SSS, ESS, and goal turnpoints."),
     sss: z.object({
         type: z.string(),
         direction: z.string(),
-        timeGates: z.array(z.string()).min(1),
-    }).optional(),
+        timeGates: z.array(timeGateSchema).min(1),
+    }),
     goal: z.object({
         type: z.enum(["LINE", "CYLINDER"]),
     }).optional(),

@@ -5,6 +5,14 @@ import type {
 } from "./types";
 import { selectLCType, adjustLCForNonGoal } from "./leadingCoeff";
 
+export function buildPilotScoreLookupKey(
+    name: string,
+    ssTime: number,
+    esTime: number,
+): string {
+    return JSON.stringify([name, ssTime, esTime]);
+}
+
 // ─── Task Totals ────────────────────────────────────────────────────────────
 
 export function computeTaskTotals(
@@ -434,7 +442,14 @@ export function scoreTask(
     });
 
     // Re-sort by total descending for final ranking
-    scores.sort((a, b) => b.total - a.total);
+    scores.sort((a, b) => {
+        if (b.total !== a.total) {
+            return b.total - a.total;
+        }
+
+        return buildPilotScoreLookupKey(a.name, a.ssTime, a.esTime)
+            .localeCompare(buildPilotScoreLookupKey(b.name, b.ssTime, b.esTime));
+    });
 
     return { formula, quality, available, totals, scores };
 }

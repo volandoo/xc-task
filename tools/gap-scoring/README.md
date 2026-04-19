@@ -32,12 +32,45 @@ Request body:
         },
         "radius": 400,
         "type": "takeoff"
+      },
+      {
+        "waypoint": {
+          "name": "SSS",
+          "description": "Start",
+          "lat": 41.223,
+          "lon": 2.223,
+          "altSmoothed": 1000
+        },
+        "radius": 2000,
+        "type": "SSS"
+      },
+      {
+        "waypoint": {
+          "name": "ESS",
+          "description": "End of speed section",
+          "lat": 41.323,
+          "lon": 2.323,
+          "altSmoothed": 900
+        },
+        "radius": 2000,
+        "type": "ESS"
+      },
+      {
+        "waypoint": {
+          "name": "GOAL",
+          "description": "Goal",
+          "lat": 41.423,
+          "lon": 2.423,
+          "altSmoothed": 800
+        },
+        "radius": 400,
+        "type": "GOAL"
       }
     ],
     "sss": {
       "type": "ENTER",
       "direction": "EXIT",
-      "timeGates": ["13:00"]
+      "timeGates": ["13:00:00Z"]
     },
     "goal": {
       "type": "CYLINDER"
@@ -62,6 +95,8 @@ Request body:
 
 Notes:
 - `task` must be raw `XCTask` JSON.
+- `task.sss.timeGates` is required and must use `HH:MM`, `HH:MM:SS`, `HH:MMZ`, or `HH:MM:SSZ`.
+- `task.turnpoints` must include at least takeoff, SSS, ESS, and goal.
 - Each track point must include `time` as Unix seconds.
 - The response is an array of objects keyed by `pilot_id`.
 

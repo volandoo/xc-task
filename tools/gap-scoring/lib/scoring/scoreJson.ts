@@ -3,6 +3,7 @@ import {
     type TrackPoint,
     type XCTask,
 } from "xc-task";
+import { buildPilotScoreLookupKey } from "./gap";
 import { scoreTaskInputs } from "./scoreTaskInputs";
 import { type AircraftClass, type FormulaConfig } from "./types";
 
@@ -87,8 +88,26 @@ export function scoreJsonTracks({
         })),
     });
 
-    return scored.rankedPilotEntries.map((entry, index) => {
-        const score = scored.result.scores[index];
+    const scoresByKey = new Map<string, typeof scored.result.scores[number]>();
+    for (const score of scored.result.scores) {
+        const key = buildPilotScoreLookupKey(score.name, score.ssTime, score.esTime);
+        if (scoresByKey.has(key)) {
+            throw new Error(`Multiple scored pilots matched key ${key}.`);
+        }
+        scoresByKey.set(key, score);
+    }
+
+    return scored.rankedPilotEntries.map((entry) => {
+        const key = buildPilotScoreLookupKey(
+            entry.pilot.name,
+            entry.pilot.score.sss,
+            entry.pilot.score.ess,
+        );
+        const score = scoresByKey.get(key);
+
+        if (!score) {
+            throw new Error(`Could not find scored result for pilot "${entry.pilot.name}" with key ${key}.`);
+        }
 
         return {
             pilot_id: entry.meta.pilot_id,
