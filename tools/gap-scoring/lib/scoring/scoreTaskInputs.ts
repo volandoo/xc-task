@@ -63,49 +63,6 @@ export type ScoreTaskInputsResult<TMeta> = {
     rankedPilotEntries: ScoredPilotEntry<TMeta>[];
 };
 
-function floorToMinuteBoundary(unixSeconds: number, minuteStep: number): number {
-    const step = minuteStep * 60;
-    return Math.floor(unixSeconds / step) * step;
-}
-
-function inferRaceStartGates(
-    declaredStartTimes: number[],
-    pilots: PilotResult[],
-): number[] {
-    const crossings = pilots
-        .map((pilot) => pilot.score.sssCrossing)
-        .filter((time) => time > 0)
-        .sort((a, b) => a - b);
-
-    if (declaredStartTimes.length < 2 || crossings.length === 0) {
-        return declaredStartTimes;
-    }
-
-    const firstCrossing = crossings[0];
-    const filtered = declaredStartTimes
-        .filter((gate) => gate <= firstCrossing + 10 * 60)
-        .filter((gate) => crossings.some((crossing) => crossing >= gate && crossing - gate <= 10 * 60));
-
-    const gates = (filtered.length > 0 ? filtered : [declaredStartTimes[declaredStartTimes.length - 1]])
-        .sort((a, b) => a - b);
-
-    while (true) {
-        const lastGate = gates[gates.length - 1];
-        const laterCrossings = crossings.filter((crossing) => crossing >= lastGate + 15 * 60);
-        if (laterCrossings.length < 2) {
-            break;
-        }
-
-        const inferredGate = floorToMinuteBoundary(laterCrossings[0], 5);
-        if (inferredGate <= lastGate) {
-            break;
-        }
-        gates.push(inferredGate);
-    }
-
-    return gates;
-}
-
 function comparePilotEntries<TMeta>(
     a: ScoredPilotEntry<TMeta>,
     b: ScoredPilotEntry<TMeta>,
@@ -146,7 +103,7 @@ export function scoreTaskInputs<TMeta>({
         throw new Error("Task does not contain any SSS start gates.");
     }
 
-    let taskStartTime = Math.min(...task.startTimes);
+    const taskStartTime = Math.min(...task.startTimes);
     const essDistance = computeESSDistance(task);
     const goalLegDistance = computeGoalLegDistance(task);
     const lcType = selectLCType(formula);
@@ -181,30 +138,6 @@ export function scoreTaskInputs<TMeta>({
     });
 
     const pilotResults = pilotEntries.map((entry) => entry.pilot);
-    const inferredStartTimes = inferRaceStartGates(task.startTimes, pilotResults);
-    const hasInferredStartGateChanges = inferredStartTimes.length !== task.startTimes.length ||
-        inferredStartTimes.some((time, index) => time !== task.startTimes[index]);
-
-    if (hasInferredStartGateChanges) {
-        task.startTimes = inferredStartTimes;
-        taskStartTime = Math.min(...inferredStartTimes);
-
-        for (const pilot of pilotResults) {
-            const crossing = pilot.score.sssCrossing;
-            if (crossing <= 0) {
-                continue;
-            }
-
-            let scoredStart = inferredStartTimes[0];
-            for (const gate of inferredStartTimes) {
-                if (crossing > gate) {
-                    scoredStart = gate;
-                }
-            }
-
-            pilot.score.sss = scoredStart;
-        }
-    }
 
     const lastESSTime = pilotResults
         .map((pilot) => pilot.score.ess)

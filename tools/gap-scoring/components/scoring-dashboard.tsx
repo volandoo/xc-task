@@ -621,16 +621,18 @@ export function ScoringDashboard() {
             <div className="overflow-x-auto">
               <Table hoverable>
                 <TableHead>
-                  <TableHeadCell>#</TableHeadCell>
-                  <TableHeadCell>Pilot</TableHeadCell>
-                  <TableHeadCell>Start</TableHeadCell>
-                  <TableHeadCell>Distance</TableHeadCell>
-                  <TableHeadCell>Goal</TableHeadCell>
-                  <TableHeadCell>Time</TableHeadCell>
-                  <TableHeadCell>Dist</TableHeadCell>
-                  <TableHeadCell>Speed</TableHeadCell>
-                  <TableHeadCell>Lead</TableHeadCell>
-                  <TableHeadCell>Total</TableHeadCell>
+                  <TableRow>
+                    <TableHeadCell>#</TableHeadCell>
+                    <TableHeadCell>Pilot</TableHeadCell>
+                    <TableHeadCell>Start</TableHeadCell>
+                    <TableHeadCell>Distance</TableHeadCell>
+                    <TableHeadCell>Goal</TableHeadCell>
+                    <TableHeadCell>Time</TableHeadCell>
+                    <TableHeadCell>Dist</TableHeadCell>
+                    <TableHeadCell>Speed</TableHeadCell>
+                    <TableHeadCell>Lead</TableHeadCell>
+                    <TableHeadCell>Total</TableHeadCell>
+                  </TableRow>
                 </TableHead>
                 <TableBody className="divide-y">
                   {result.result.scores.map((score, index) => (
@@ -660,13 +662,15 @@ export function ScoringDashboard() {
               <div className="overflow-x-auto">
                 <Table hoverable>
                   <TableHead>
-                    <TableHeadCell>No</TableHeadCell>
-                    <TableHeadCell>Name</TableHeadCell>
-                    <TableHeadCell>Radius</TableHeadCell>
-                    <TableHeadCell>Leg Dist.</TableHeadCell>
-                    <TableHeadCell>Total Dist.</TableHeadCell>
-                    <TableHeadCell>Coordinates</TableHeadCell>
-                    <TableHeadCell>Altitude</TableHeadCell>
+                    <TableRow>
+                      <TableHeadCell>No</TableHeadCell>
+                      <TableHeadCell>Name</TableHeadCell>
+                      <TableHeadCell>Radius</TableHeadCell>
+                      <TableHeadCell>Leg Dist.</TableHeadCell>
+                      <TableHeadCell>Total Dist.</TableHeadCell>
+                      <TableHeadCell>Coordinates</TableHeadCell>
+                      <TableHeadCell>Altitude</TableHeadCell>
+                    </TableRow>
                   </TableHead>
                   <TableBody className="divide-y">
                     {result.taskDefinition.map((row) => (
@@ -694,8 +698,10 @@ export function ScoringDashboard() {
               <div className="overflow-x-auto">
                 <Table hoverable>
                   <TableHead>
-                    <TableHeadCell>param</TableHeadCell>
-                    <TableHeadCell>value</TableHeadCell>
+                    <TableRow>
+                      <TableHeadCell>param</TableHeadCell>
+                      <TableHeadCell>value</TableHeadCell>
+                    </TableRow>
                   </TableHead>
                   <TableBody className="divide-y">
                     {result.taskStatistics.map((row) => (
@@ -718,8 +724,10 @@ export function ScoringDashboard() {
               <div className="overflow-x-auto">
                 <Table hoverable>
                   <TableHead>
-                    <TableHeadCell>param</TableHeadCell>
-                    <TableHeadCell>value</TableHeadCell>
+                    <TableRow>
+                      <TableHeadCell>param</TableHeadCell>
+                      <TableHeadCell>value</TableHeadCell>
+                    </TableRow>
                   </TableHead>
                   <TableBody className="divide-y">
                     {result.formulaSettings.map((row) => (
