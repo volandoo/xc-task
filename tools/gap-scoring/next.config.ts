@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
 import withFlowbiteReact from "flowbite-react/plugin/nextjs";
+import { MAX_ARCHIVE_UPLOAD_BYTES } from "./lib/uploadLimits";
 
 const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
-    proxyClientMaxBodySize: "50mb",
+    proxyClientMaxBodySize: MAX_ARCHIVE_UPLOAD_BYTES,
   },
 };
 

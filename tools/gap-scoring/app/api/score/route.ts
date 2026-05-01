@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { NextResponse } from "next/server";
 import { scoreArchive, type ArchiveFile } from "@/lib/scoring/scoreArchive";
 import type { AircraftClass, FormulaConfig } from "@/lib/scoring/types";
+import { MAX_ARCHIVE_UPLOAD_BYTES, MAX_ARCHIVE_UPLOAD_LABEL } from "@/lib/uploadLimits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,6 +60,13 @@ export async function POST(request: Request) {
             return NextResponse.json(
                 { error: "Upload a single zip archive in the archive field." },
                 { status: 400 },
+            );
+        }
+
+        if (archive.size > MAX_ARCHIVE_UPLOAD_BYTES) {
+            return NextResponse.json(
+                { error: `Zip archive exceeds the ${MAX_ARCHIVE_UPLOAD_LABEL} upload limit.` },
+                { status: 413 },
             );
         }
 
