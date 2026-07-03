@@ -12,7 +12,7 @@ export type XCTask = {
         radius: number;
         type: string;
     }[];
-    sss?: {
+    sss: {
         type: string;
         direction: string;
         timeGates: string[];
@@ -22,9 +22,37 @@ export type XCTask = {
     };
 };
 
+function parseStartGateTime(time: string): number {
+    const normalized = time.trim().replace(/Z$/, "");
+    const match = normalized.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+
+    if (!match) {
+        throw new Error(`Invalid SSS time gate "${time}". Expected HH:MM, HH:MM:SS, HH:MMZ, or HH:MM:SSZ.`);
+    }
+
+    const hours = Number.parseInt(match[1], 10);
+    const minutes = Number.parseInt(match[2], 10);
+    const seconds = Number.parseInt(match[3] ?? "0", 10);
+
+    if (
+        Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds) ||
+        hours > 23 || minutes > 59 || seconds > 59
+    ) {
+        throw new Error(`Invalid SSS time gate "${time}".`);
+    }
+
+    return Math.floor(
+        new Date().setUTCHours(hours, minutes, seconds, 0).valueOf() / 1000,
+    );
+}
+
 export const parseXctsk = function (xctask: string | XCTask): Task {
 
     const task = typeof xctask === "string" ? JSON.parse(xctask) as XCTask : xctask;
+
+    if (!task.sss || task.sss.timeGates.length === 0) {
+        throw new Error("Task must include at least one SSS time gate.");
+    }
 
     const waypoints = task.turnpoints.map((t, i) => {
         const goal = i === task.turnpoints.length - 1;
@@ -48,19 +76,9 @@ export const parseXctsk = function (xctask: string | XCTask): Task {
 
     const startTimes = [];
     for (const time of task.sss.timeGates) {
-        const timeString = time.replace("Z", "");
+        const timeString = time.trim();
         if (timeString) {
-            const parts = time.split(":");
-            startTimes.push(
-                Math.floor(
-                    new Date().setUTCHours(
-                        parseInt(parts[0]),
-                        parseInt(parts[1]),
-                        parseInt(parts[2]), 0
-                    ).valueOf() / 1000
-                )
-
-            );
+            startTimes.push(parseStartGateTime(timeString));
         }
     }
     return {
